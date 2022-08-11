@@ -8,79 +8,82 @@ namespace BossMod
         public enum Opcode
         {
             // opcodes from machina
-            StatusEffectList = 0x01D0,
-            StatusEffectList2 = 0xF31E,
-            StatusEffectList3 = 0xF357,
-            BossStatusEffectList = 0xF11A,
-            ActionEffect1 = 0x0353, // Machina calls it AbilityN, size=124
-            ActionEffect8 = 0x02E0, // size=636
-            ActionEffect16 = 0x014D,
-            ActionEffect24 = 0x0065,
-            ActionEffect32 = 0x012D,
-            ActorCast = 0x0077,
-            EffectResult = 0xF12A,
-            EffectResultBasic = 0x1077,
-            ActorControl = 0x00CB, // look at toggle weapon
-            ActorControlSelf = 0x03CD, // look at cooldown
-            ActorControlTarget = 0x0174, // look at target change
-            UpdateHpMpTp = 0x00E7,
-            PlayerSpawn = 0x020C,
-            NpcSpawn = 0x01A4,
-            NpcSpawn2 = 0xF20A,
-            ActorMove = 0x0227,
-            ActorSetPos = 0x0240,
-            ActorGauge = 0x03A3,
-            PresetWaymark = 0x0314, // FFXIVOpcodes calls this PlaceFieldMarkerPreset
-            Waymark = 0x01AF, // FFXIVOpcodes calls this PlaceFieldMarker
-            SystemLogMessage = 0x008F, // FFXIVOpcodes calls this SomeDirectorUnk4
+            StatusEffectList = 0x0370,
+            StatusEffectList2 = 0x024F,
+            StatusEffectList3 = 0x0356,
+            BossStatusEffectList = 0x017A,
+            ActionEffect1 = 0x00C0, // Machina calls it AbilityN, size=124
+            ActionEffect8 = 0x02C2, // size=636
+            ActionEffect16 = 0x02B9,
+            ActionEffect24 = 0x0114,
+            ActionEffect32 = 0x0218,
+            ActorCast = 0x0154,
+            EffectResult = 0x0289,
+            EffectResultBasic = 0x02AC,
+            ActorControl = 0x022C, // look at toggle weapon
+            ActorControlSelf = 0x010C, // look at cooldown
+            ActorControlTarget = 0x012B, // look at target change
+            UpdateHpMpTp = 0x028B,
+            PlayerSpawn = 0x0106,
+            NpcSpawn = 0x03A7,
+            NpcSpawn2 = 0x013E,
+            ActorMove = 0x02DC,
+            ActorSetPos = 0x0169,
+            ActorGauge = 0x00DF,
+            PresetWaymark = 0x0189, // FFXIVOpcodes calls this PlaceFieldMarkerPreset
+            Waymark = 0x00F5, // FFXIVOpcodes calls this PlaceFieldMarker
+            SystemLogMessage = 0x02A4, // FFXIVOpcodes calls this SomeDirectorUnk4
 
             // opcodes from FFXIVOpcodes
-            PlayerSetup = 0x0304,
-            UpdateClassInfo = 0x03D5,
-            PlayerStats = 0x0310,
-            Playtime = 0x01E5,
-            UpdateSearchInfo = 0x0205,
-            ExamineSearchInfo = 0x019C,
-            CurrencyCrystalInfo = 0xF0D8,
-            InitZone = 0x010F,
-            WeatherChange = 0x03BF,
-            HousingWardInfo = 0x00D3,
-            PrepareZoning = 0x02F7,
-            ContainerInfo = 0x0323,
-            ItemInfo = 0x01A0,
-            FreeCompanyInfo = 0x011C,
-            FreeCompanyDialog = 0x0367,
-            MarketBoardSearchResult = 0x025D,
-            MarketBoardItemListingCount = 0x033C,
-            MarketBoardItemListingHistory = 0x02ED,
-            MarketBoardItemListing = 0x0371,
-            MarketBoardPurchase = 0x010D,
-            UpdateInventorySlot = 0x02DE,
-            InventoryActionAck = 0x013E,
-            InventoryTransaction = 0x03C3,
-            InventoryTransactionFinish = 0x0180,
-            ResultDialog = 0x0325,
-            RetainerInformation = 0x0289,
-            ItemMarketBoardInfo = 0x00A2,
-            EventPlay32 = 0x01EC,
-            EventStart = 0xF08D,
-            EventFinish = 0xF2CA,
-            DesynthResult = 0xF354,
-            CFPreferredRole = 0xF2A0,
-            CFNotify = 0x0147,
-            ObjectSpawn = 0xF305,
-            AirshipTimers = 0xF3B4,
-            SubmarineTimers = 0xF172,
-            AirshipStatusList = 0xF2A8,
-            AirshipStatus = 0xF10C,
-            AirshipExplorationResult = 0xF320,
-            SubmarineExplorationResult = 0xF14D,
-            EventPlay = 0xF0F3,
-            EventPlay4 = 0xF2DB,
-            Logout = 0xF295,
+            PlayerSetup = 0x01BB,
+            UpdateClassInfo = 0x034F,
+            PlayerStats = 0x02CE,
+            Playtime = 0x01C1,
+            UpdateSearchInfo = 0x0140,
+            ExamineSearchInfo = 0x02C9,
+            CurrencyCrystalInfo = 0x00A7,
+            InitZone = 0x0163,
+            WeatherChange = 0x03BF, // Invalid Opcode
+            HousingWardInfo = 0x0249,
+            PrepareZoning = 0x008C,
+            ContainerInfo = 0x00B0,
+            ItemInfo = 0x02DD,
+            FreeCompanyInfo = 0x03B1,
+            FreeCompanyDialog = 0x01D1,
+            MarketBoardSearchResult = 0x010A,
+            MarketBoardItemListingCount = 0x00BD,
+            MarketBoardItemListingHistory = 0x00B2,
+            MarketBoardItemListing = 0x024D,
+            MarketBoardPurchase = 0x01C5,
+            UpdateInventorySlot = 0x009B,
+            InventoryActionAck = 0x03CD,
+            InventoryTransaction = 0x02EF,
+            InventoryTransactionFinish = 0x01FE,
+            ResultDialog = 0x0347,
+            RetainerInformation = 0x0071,
+            ItemMarketBoardInfo = 0x02A2,
+            EventPlay32 = 0x01EC, // Invalid Opcode
+            EventStart = 0x022C,
+            EventFinish = 0x033B,
+            DesynthResult = 0x0153,
+            CFPreferredRole = 0x03AC,
+            CFNotify = 0x0230,
+            ObjectSpawn = 0x01BD,
+            AirshipTimers = 0xF3B4, // Invalid Opcode
+            SubmarineTimers = 0xF172, // Invalid Opcode
+            AirshipStatusList = 0x00DA,
+            AirshipStatus = 0x00B6,
+            AirshipExplorationResult = 0x02B5,
+            SubmarineExplorationResult = 0x00B5,
+            EventPlay = 0x02E5,
+            EventPlay4 = 0x0199,
+            Logout = 0x037A,
 
             // below are opcodes i've reversed myself...
-            EnvironmentControl = 0x007B, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
+
+            // Sig then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
+            EnvironmentControl = 0x0339, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
+            
             UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
             UpdateHate = 0x023F, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
             UpdateHater = 0x032A, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
