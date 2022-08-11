@@ -15,11 +15,11 @@ namespace BossMod
 
         public void Draw()
         {
-            if (ImGui.CollapsingHeader("Settings"))
+            if (ImGui.CollapsingHeader("设置"))
             {
-                ImGui.Checkbox("Draw unnamed nodes", ref _col.DrawUnnamedNodes);
-                ImGui.Checkbox("Draw tankbuster nodes only", ref _col.DrawTankbusterNodesOnly);
-                ImGui.Checkbox("Draw raidwide nodes only", ref _col.DrawRaidwideNodesOnly);
+                ImGui.Checkbox("显示未命名节点", ref _col.DrawUnnamedNodes);
+                ImGui.Checkbox("只显示坦克死刑节点", ref _col.DrawTankbusterNodesOnly);
+                ImGui.Checkbox("只显示全屏AOE节点", ref _col.DrawRaidwideNodesOnly);
             }
 
             _timeline.CurrentTime = null;

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace BossMod
 {
-    [ConfigDisplay(Name = "Party roles assignment", Order = 2)]
+    [ConfigDisplay(Name = "小队职业分配", Order = 2)]
     public class PartyRolesConfig : ConfigNode
     {
         public enum Role { MT, OT, H1, H2, M1, M2, R1, R2, Unassigned }
@@ -71,9 +71,15 @@ namespace BossMod
         {
             if (ImGui.BeginTable("tab2", 10, ImGuiTableFlags.SizingFixedFit))
             {
+                int index = 0;
                 foreach (var r in typeof(Role).GetEnumValues())
-                    ImGui.TableSetupColumn(r.ToString(), ImGuiTableColumnFlags.None, 25);
-                ImGui.TableSetupColumn("Name");
+                {
+                    ImGui.TableSetupColumn(r.ToString(), ImGuiTableColumnFlags.None, index == 8 ? 70 : 30);
+                    index++;
+                }
+                    
+
+                ImGui.TableSetupColumn("名称");
                 ImGui.TableHeadersRow();
 
                 List<(ulong, string, BossMod.Role, Role)> party = new();
@@ -108,13 +114,13 @@ namespace BossMod
                 if (AssignmentsPerSlot(ws.Party).Length == 0)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xff00ffff);
-                    ImGui.TextUnformatted("Invalid assignments: there should be exactly one raid member per role");
+                    ImGui.TextUnformatted("无效分配: 每个职业都应该有至少一个玩家");
                     ImGui.PopStyleColor();
                 }
                 else
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xff00ff00);
-                    ImGui.TextUnformatted("All good!");
+                    ImGui.TextUnformatted("没有问题!");
                     ImGui.PopStyleColor();
                 }
             }

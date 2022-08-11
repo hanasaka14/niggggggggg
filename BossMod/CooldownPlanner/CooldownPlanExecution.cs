@@ -149,14 +149,14 @@ namespace BossMod
                 else if (windowActive)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xff00ffff);
-                    ImGui.TextUnformatted($"{name}: use now! ({nextTransition.Value - t:f1}s left)");
+                    ImGui.TextUnformatted($"{name}: 现在使用! ({nextTransition.Value - t:f1}秒剩余)");
                     ImGui.PopStyleColor();
                 }
                 else
                 {
                     var left = nextTransition.Value - t;
                     ImGui.PushStyleColor(ImGuiCol.Text, left < cd ? 0xffffffff : 0x80808080);
-                    ImGui.TextUnformatted($"{name}: in {left:f1}s");
+                    ImGui.TextUnformatted($"{name}: {left:f1}秒后");
                     ImGui.PopStyleColor();
                 }
             }

@@ -68,13 +68,13 @@ namespace BossMod.AI
 
         private void DrawOverlay()
         {
-            ImGui.TextUnformatted($"AI: {(_beh != null ? "on" : "off")}, master={_autorot.WorldState.Party[_masterSlot]?.Name}");
-            ImGui.TextUnformatted($"Navi={_controller.NaviTargetPos}");
+            ImGui.TextUnformatted($"AI: {(_beh != null ? "开" : "关")}, master={_autorot.WorldState.Party[_masterSlot]?.Name}");
+            ImGui.TextUnformatted($"navi={_controller.NaviTargetPos}");
             _beh?.DrawDebug();
-            if (ImGui.Button("Reset"))
+            if (ImGui.Button("重设"))
                 SwitchToIdle();
             ImGui.SameLine();
-            if (ImGui.Button("Follow leader"))
+            if (ImGui.Button("跟随队长"))
             {
                 var leader = Service.PartyList[(int)Service.PartyList.PartyLeaderIndex];
                 int leaderSlot = leader != null ? _autorot.WorldState.Party.ContentIDs.IndexOf((ulong)leader.ContentId) : -1;
@@ -133,7 +133,7 @@ namespace BossMod.AI
                     SwitchToIdle();
                     break;
                 default:
-                    Service.Log($"[AI] Unknown command: {messageData[1]}");
+                    Service.Log($"[AI] 未知指令: {messageData[1]}");
                     break;
             }
         }

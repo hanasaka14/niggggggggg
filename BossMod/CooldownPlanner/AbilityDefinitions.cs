@@ -42,7 +42,7 @@ namespace BossMod
                 foreach (var (action, data) in supportedActions)
                 {
                     if (!_cooldownGroupToTrackIndex.ContainsKey(data.CooldownGroup))
-                        AddTrack(Track.Category.SharedCooldown, data.CooldownGroup, cdgType.GetEnumName(data.CooldownGroup) ?? $"Group {data.CooldownGroup}");
+                        AddTrack(Track.Category.SharedCooldown, data.CooldownGroup, cdgType.GetEnumName(data.CooldownGroup) ?? $"组 {data.CooldownGroup}");
 
                     var track = _cooldownGroupToTrackIndex[data.CooldownGroup];
                     Abilities[action] = new(track, data);

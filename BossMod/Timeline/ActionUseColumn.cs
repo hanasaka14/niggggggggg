@@ -218,14 +218,14 @@ namespace BossMod
         private List<string> EntryTooltip(Entry e)
         {
             List<string> res = new();
-            res.Add($"Action: {e.Name}");
-            res.Add($"Press at: {e.WindowStartSinceGlobalStart(_tree):f1}s ({e.WindowStartSincePhaseStart():f1}s since phase start, {e.WindowStartDelay:f1}s after state start)");
+            res.Add($"技能: {e.Name}");
+            res.Add($"按下位置: 第{e.WindowStartSinceGlobalStart(_tree):f1}秒 (自阶段开始过去了{e.WindowStartSincePhaseStart():f1}秒, 自状态开始之后过去了{e.WindowStartDelay:f1}秒)");
             if (e.AttachNode.Predecessor != null)
                 res.Add($"Attached: {e.WindowStartDelay:f1}s after {e.AttachNode.Predecessor.State.ID:X} '{e.AttachNode.Predecessor.State.Name}' ({e.AttachNode.Predecessor.State.Comment})");
             else
                 res.Add($"Attached: {e.WindowStartDelay:f1}s after pull");
-            res.Add($"Next state: {e.AttachNode.State.Duration - e.WindowStartDelay:f1}s before {e.AttachNode.State.ID:X} '{e.AttachNode.State.Name}' ({e.AttachNode.State.Comment})");
-            res.Add($"Window: {e.WindowLength:f1}s");
+            res.Add($"下一状态: {e.AttachNode.State.Duration - e.WindowStartDelay:f1}s before {e.AttachNode.State.ID:X} '{e.AttachNode.State.Name}' ({e.AttachNode.State.Comment})");
+            res.Add($"窗口期: {e.WindowLength:f1}秒");
             return res;
         }
 

@@ -91,10 +91,10 @@ namespace BossMod
         private List<string> NodeTooltip(StateMachineTree.Node n)
         {
             List<string> res = new();
-            res.Add($"State: {n.State.ID:X} '{n.State.Name}'");
+            res.Add($"状态: {n.State.ID:X} '{n.State.Name}'");
             res.Add($"Comment: {n.State.Comment}");
-            res.Add($"Phase: {n.PhaseID} '{Tree.Phases[n.PhaseID].Name}'");
-            res.Add($"Time: {n.Time:f1} ({n.State.Duration:f1} from prev)");
+            res.Add($"阶段: {n.PhaseID} '{Tree.Phases[n.PhaseID].Name}'");
+            res.Add($"时长: {n.Time:f1} ({n.State.Duration:f1} from prev)");
             res.Add($"Flags: {n.State.EndHint}");
             return res;
         }

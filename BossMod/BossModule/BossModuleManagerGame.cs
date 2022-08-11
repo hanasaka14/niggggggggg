@@ -28,14 +28,14 @@ namespace BossMod
             else if (_mainWindow == null && LoadedModules.Count > 0)
             {
                 Service.Log("[BMM] Creating main window, since there are now loaded modules");
-                _mainWindow = WindowManager.CreateWindow("Boss module", DrawMainWindow, MainWindowClosed, MainWindowClosedByUser);
+                _mainWindow = WindowManager.CreateWindow("Boss 模块", DrawMainWindow, MainWindowClosed, MainWindowClosedByUser);
                 _mainWindow.SizeHint = new(400, 400);
             }
 
             // update main window properties
             if (_mainWindow != null)
             {
-                _mainWindow.Title = ActiveModule != null ? $"Boss module ({ActiveModule.GetType().Name})" : "Loaded boss modules";
+                _mainWindow.Title = ActiveModule != null ? $"Boss 模块 ({ActiveModule.GetType().Name})" : "已加载的Boss模块";
                 _mainWindow.Flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
                 if (WindowConfig.TrishaMode)
                     _mainWindow.Flags |= ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground;
@@ -53,7 +53,7 @@ namespace BossMod
             else if (_planWindow == null && showPlanWindow)
             {
                 Service.Log("[BMM] Opening plan window");
-                _planWindow = WindowManager.CreateWindow("Cooldown plan", DrawPlanWindow, PlanWindowClosed, () => true);
+                _planWindow = WindowManager.CreateWindow("冷却计划", DrawPlanWindow, PlanWindowClosed, () => true);
                 _planWindow.SizeHint = new(400, 400);
             }
 
@@ -187,10 +187,10 @@ namespace BossMod
             if (ActiveModule?.PlanExecution == null)
                 return;
 
-            if (ImGui.Button("Show timeline"))
+            if (ImGui.Button("显示时间线"))
             {
                 var timeline = new StateMachineVisualizer(ActiveModule.StateMachine);
-                var w = WindowManager.CreateWindow($"{ActiveModule.GetType().Name} timeline", timeline.Draw, () => { }, () => true);
+                var w = WindowManager.CreateWindow($"{ActiveModule.GetType().Name} 时间线", timeline.Draw, () => { }, () => true);
                 w.SizeHint = new(600, 600);
                 w.MinSize = new(100, 100);
             }
