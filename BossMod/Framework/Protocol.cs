@@ -87,8 +87,12 @@ namespace BossMod
             UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
             UpdateHate = 0x023F, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
             UpdateHater = 0x032A, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
-            ActionRequest = 0x0088, // just begin casting return...
-            ActionRequestGroundTargeted = 0x0159, // XIVAlexander
+
+            // 48 8d 54 24 20 45 33 c9 c7 44 24 20
+            ActionRequest = 0x015d, // just begin casting return...
+
+            // 66 89 44 24 4c f3 0f 11 4c 24 54 f3 0f 11 44 24 58
+            ActionRequestGroundTargeted = 0x0133, // XIVAlexander
             // old - 0x1fd == EventObjSpawn? for stuff like exit points, etc.
         }
 
