@@ -81,22 +81,29 @@ namespace BossMod
 
             // below are opcodes i've reversed myself...
 
-            // Sig then x-ref: 40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 48 8B D3 48 83 C4 ?? 5B E9 ?? ?? ?? ?? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ?? 48 8B D9 E8 ?? ?? ?? ?? 48 8B C8 E8 ?? ?? ?? ?? 48 85 C0 74 ?? 48 8B D3
+            // Scan sig then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
             EnvironmentControl = 0x0204, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
             
+            // 还没找到Sig 不过暂时也没用到
             UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
 
-            // 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
+            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
             UpdateHate = 0x0284, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
-            // 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ??
+            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ?
             UpdateHater = 0x0072, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // 48 8D 54 24 20 45 33 C9 C7 44 24 20
             ActionRequest = 0x01B7, // just begin casting return...
 
+            // E8 ? ? ? ? 84 C0 74 ? B0 ? EB ? 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 CC CC CC CC CC CC 40 53
+            Countdown = 0x035A,
+
+            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
+            CountdownCancel = 0x039A,
+
             // 66 89 44 24 4C F3 0F 11 4C 24 54 F3 0F 11 44 24 58
-            ActionRequestGroundTargeted = 0x06A, // XIVAlexander
+            ActionRequestGroundTargeted = 0x006A, // XIVAlexander
             // old - 0x1fd == EventObjSpawn? for stuff like exit points, etc.
         }
 
@@ -205,18 +212,20 @@ namespace BossMod
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct Server_ActorCast
         {
-            public ushort ActionID;
-            public ActionType SkillType;
-            public byte Unknown;
-            public uint Unknown1; // also action ID; dissector calls it ItemId - matches actionId of ActionEffectHeader - e.g. when using KeyItem, action is generic 'KeyItem 1', Unknown1 is actual item id, probably similar for stuff like mounts etc.
+            public ushort SpellID;
+            public ActionType ActionType;
+            public byte BaseCastTime100ms;
+            public uint ActionID; // also action ID; dissector calls it ItemId - matches actionId of ActionEffectHeader - e.g. when using KeyItem, action is generic 'KeyItem 1', Unknown1 is actual item id, probably similar for stuff like mounts etc.
             public float CastTime;
             public uint TargetID;
-            public float Rotation; // in radians
-            public uint Unknown2;
+            public ushort Rotation;
+            public byte Interruptible;
+            public byte u1;
+            public uint u2_objID;
             public ushort PosX;
             public ushort PosY;
             public ushort PosZ;
-            public ushort Unknown3;
+            public ushort u3;
         }
 
         public enum Server_ActorControlCategory : ushort
@@ -467,40 +476,46 @@ namespace BossMod
         public struct Server_EffectResultEntry
         {
             public byte EffectIndex;
-            public byte unknown1;
+            public byte padding1;
             public ushort EffectID;
-            public ushort unknown2;
-            public ushort unknown3;
-            public float duration;
+            public ushort Extra;
+            public ushort padding2;
+            public float Duration;
             public uint SourceActorID;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public unsafe struct Server_EffectResult
         {
-            public uint Unknown1;
+            public byte Count; // always 1?..
+            public byte padding1;
+            public short padding2;
             public uint RelatedActionSequence;
             public uint ActorID;
             public uint CurrentHP;
             public uint MaxHP;
             public ushort CurrentMP;
-            public ushort Unknown3;
+            public byte RelatedTargetIndex;
+            public byte ClassJob;
             public byte DamageShield;
             public byte EffectCount;
-            public ushort Unknown6;
+            public ushort padding3;
             public fixed byte Effects[4 * 4 * 4]; // Server_EffectResultEntry[4]
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public unsafe struct Server_EffectResultBasic
         {
-            public uint Unknown1;
+            public byte Count; // always 1?..
+            public byte padding1;
+            public short padding2;
             public uint RelatedActionSequence;
             public uint ActorID;
             public uint CurrentHP;
-            public uint Unknown2;
-            public ushort Unknown3;
-            public ushort Unknown4;
+            public byte RelatedTargetIndex;
+            public byte padding3;
+            public ushort padding4;
+            public uint padding5;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
