@@ -5,22 +5,22 @@
         public WardensWarmth() : base(ActionID.MakeSpell(AID.WardensWarmthAOE), 6) { }
     }
 
-    class SolarWingsL : Components.SelfTargetedAOEs
+    class SolarWingsL : Components.SelfTargetedLegacyRotationAOEs
     {
         public SolarWingsL() : base(ActionID.MakeSpell(AID.SolarWingsL), new AOEShapeCone(30, 67.5f.Degrees(), 90.Degrees())) { }
     }
 
-    class SolarWingsR : Components.SelfTargetedAOEs
+    class SolarWingsR : Components.SelfTargetedLegacyRotationAOEs
     {
         public SolarWingsR() : base(ActionID.MakeSpell(AID.SolarWingsR), new AOEShapeCone(30, 67.5f.Degrees(), -90.Degrees())) { }
     }
 
-    class FleetingSpark : Components.SelfTargetedAOEs
+    class FleetingSpark : Components.SelfTargetedLegacyRotationAOEs
     {
         public FleetingSpark() : base(ActionID.MakeSpell(AID.FleetingSpark), new AOEShapeCone(60, 135.Degrees())) { }
     }
 
-    class SolarFold : Components.SelfTargetedAOEs
+    class SolarFold : Components.SelfTargetedLegacyRotationAOEs
     {
         public SolarFold() : base(ActionID.MakeSpell(AID.SolarFoldAOE), new AOEShapeMulti(new AOEShape[] { new AOEShapeRect(30, 5, 30), new AOEShapeRect(5, 30, 5) })) { }
     }

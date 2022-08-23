@@ -36,7 +36,7 @@
         public GrandSlam() : base(ActionID.MakeSpell(AID.GrandSlam), "Tankbuster") { }
     }
 
-    class ColossalSlam : Components.SelfTargetedAOEs
+    class ColossalSlam : Components.SelfTargetedLegacyRotationAOEs
     {
         public ColossalSlam() : base(ActionID.MakeSpell(AID.ColossalSlam), new AOEShapeCone(40, 30.Degrees())) { }
     }

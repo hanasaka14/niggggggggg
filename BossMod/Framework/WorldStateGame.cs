@@ -14,10 +14,14 @@ namespace BossMod
         private List<Operation> _globalOps = new();
         private Dictionary<ulong, List<Operation>> _actorOps = new();
 
+        private List<(ulong Caster, ActorCastEvent Event)> _castEvents = new();
+        private List<(uint Seq, ulong Target, int TargetIndex)> _confirms = new();
+
         public WorldStateGame(Network network)
         {
             _network = network;
             _network.EventActionEffect += OnNetworkActionEffect;
+            _network.EventEffectResult += OnNetworkEffectResult;
             _network.EventActorControlTargetIcon += OnNetworkActorControlTargetIcon;
             _network.EventActorControlTether += OnNetworkActorControlTether;
             _network.EventActorControlTetherCancel += OnNetworkActorControlTetherCancel;
@@ -29,6 +33,7 @@ namespace BossMod
         public void Dispose()
         {
             _network.EventActionEffect -= OnNetworkActionEffect;
+            _network.EventEffectResult -= OnNetworkEffectResult;
             _network.EventActorControlTargetIcon -= OnNetworkActorControlTargetIcon;
             _network.EventActorControlTether -= OnNetworkActorControlTether;
             _network.EventActorControlTetherCancel -= OnNetworkActorControlTetherCancel;
@@ -44,6 +49,14 @@ namespace BossMod
             {
                 Execute(new OpZoneChange() { Zone = Service.ClientState.TerritoryType });
             }
+
+            foreach (var c in _confirms)
+                PendingEffects.Confirm(CurrentTime, c.Seq, c.Target, c.TargetIndex);
+            _confirms.Clear();
+            PendingEffects.RemoveExpired(CurrentTime);
+            foreach (var c in _castEvents)
+                PendingEffects.AddEntry(CurrentTime, c.Caster, c.Event);
+            _castEvents.Clear();
 
             foreach (var op in _globalOps)
             {
@@ -103,6 +116,7 @@ namespace BossMod
             var inCombat = character?.StatusFlags.HasFlag(StatusFlags.InCombat) ?? false;
             var target = SanitizedObjectID(obj != Service.ClientState.LocalPlayer ? obj.TargetObjectId : (Service.TargetManager.Target?.ObjectId ?? 0)); // this is a bit of a hack - when changing targets, we want AI to see changes immediately rather than wait for server response
             var modelState = character != null ? Utils.CharacterModelState(character) : (byte)0; // TODO: consider this (reading memory) vs network (actor control 63)
+            var eventState = Utils.GameObjectEventState(obj);
 
             var act = Actors.Find(obj.ObjectId);
             if (act == null)
@@ -146,6 +160,8 @@ namespace BossMod
                 Execute(new ActorState.OpCombat() { InstanceID = act.InstanceID, Value = inCombat });
             if (act.ModelState != modelState)
                 Execute(new ActorState.OpModelState() { InstanceID = act.InstanceID, Value = modelState });
+            if (act.EventState != eventState)
+                Execute(new ActorState.OpEventState() { InstanceID = act.InstanceID, Value = eventState });
             if (act.TargetID != target)
                 Execute(new ActorState.OpTarget() { InstanceID = act.InstanceID, Value = target });
             DispatchActorEvents(act.InstanceID);
@@ -158,6 +174,7 @@ namespace BossMod
                     {
                         Action = new((ActionType)chara.CastActionType, chara.CastActionId),
                         TargetID = SanitizedObjectID(chara.CastTargetObjectId),
+                        Rotation = Utils.CharacterCastRotation(chara).Radians(),
                         Location = Utils.BattleCharaCastLocation(chara),
                         TotalTime = chara.TotalCastTime,
                         FinishAt = CurrentTime.AddSeconds(Math.Clamp(chara.TotalCastTime - chara.CurrentCastTime, 0, 100000)),
@@ -292,6 +309,12 @@ namespace BossMod
         private void OnNetworkActionEffect(object? sender, (ulong actorID, ActorCastEvent cast) args)
         {
             _actorOps.GetOrAdd(args.actorID).Add(new ActorState.OpCastEvent() { InstanceID = args.actorID, Value = args.cast });
+            _castEvents.Add((args.actorID, args.cast));
+        }
+
+        private void OnNetworkEffectResult(object? sender, (ulong actorID, uint seq, int targetIndex) args)
+        {
+            _confirms.Add((args.seq, args.actorID, args.targetIndex));
         }
 
         private void OnNetworkActorControlTargetIcon(object? sender, (ulong actorID, uint iconID) args)

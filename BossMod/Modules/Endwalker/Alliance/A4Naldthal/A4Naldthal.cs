@@ -20,12 +20,12 @@
         public LivingHeat() : base(ActionID.MakeSpell(AID.LivingHeatReal), new AOEShapeCircle(8)) { }
     }
 
-    class HellOfFireFront : Components.SelfTargetedAOEs
+    class HellOfFireFront : Components.SelfTargetedLegacyRotationAOEs
     {
         public HellOfFireFront() : base(ActionID.MakeSpell(AID.HellOfFireFrontAOE), new AOEShapeCone(60, 90.Degrees())) { }
     }
 
-    class HellOfFireBack : Components.SelfTargetedAOEs
+    class HellOfFireBack : Components.SelfTargetedLegacyRotationAOEs
     {
         public HellOfFireBack() : base(ActionID.MakeSpell(AID.HellOfFireBackAOE), new AOEShapeCone(60, 90.Degrees())) { }
     }
@@ -35,7 +35,7 @@
         public WaywardSoul() : base(ActionID.MakeSpell(AID.WaywardSoulAOE), new AOEShapeCircle(18), 3) { }
     }
 
-    class Twingaze : Components.SelfTargetedAOEs
+    class Twingaze : Components.SelfTargetedLegacyRotationAOEs
     {
         public Twingaze() : base(ActionID.MakeSpell(AID.Twingaze), new AOEShapeCone(60, 15.Degrees())) { }
     }

@@ -31,6 +31,7 @@ namespace BossMod
     {
         public ActionID Action;
         public ulong TargetID;
+        public Angle Rotation;
         public Vector3 Location;
         public float TotalTime;
         public DateTime FinishAt;
@@ -57,7 +58,8 @@ namespace BossMod
         public uint MaxTargets;
         public List<Target> Targets = new();
         public Vector3 TargetPos;
-        public uint SourceSequence;
+        public uint SourceSequence; // note: transient
+        public uint GlobalSequence;
 
         public WPos TargetXZ => new(TargetPos.XZ());
 
@@ -103,6 +105,7 @@ namespace BossMod
         public bool IsDead;
         public bool InCombat;
         public byte ModelState;
+        public byte EventState; // not sure about the field meaning...
         public ulong OwnerID; // uuid of owner, for pets and similar
         public ulong TargetID;
         public ActorCastInfo? CastInfo;

@@ -1,5 +1,6 @@
 ﻿using Dalamud.Game.Network;
 using Dalamud.Hooking;
+using Dalamud.Memory;
 using System;
 using System.IO;
 using System.Numerics;
@@ -16,6 +17,7 @@ namespace BossMod
         }
 
         public event EventHandler<(ulong actorID, ActorCastEvent cast)>? EventActionEffect;
+        public event EventHandler<(ulong actorID, uint seq, int targetIndex)>? EventEffectResult;
         public event EventHandler<(ulong actorID, ActionID action, float castTime, ulong targetID)>? EventActorCast;
         public event EventHandler<(ulong actorID, uint actionID)>? EventActorControlCancelCast;
         public event EventHandler<(ulong actorID, uint iconID)>? EventActorControlTargetIcon;
@@ -121,6 +123,12 @@ namespace BossMod
                     case Protocol.Opcode.ActionEffect32:
                         HandleActionEffect32((Protocol.Server_ActionEffect32*)dataPtr, targetActorId);
                         break;
+                    case Protocol.Opcode.EffectResultBasic:
+                        HandleEffectResultBasic((Protocol.Server_EffectResultBasic*)dataPtr, targetActorId);
+                        break;
+                    case Protocol.Opcode.EffectResult:
+                        HandleEffectResult((Protocol.Server_EffectResult*)dataPtr, targetActorId);
+                        break;
                     case Protocol.Opcode.ActorCast:
                         HandleActorCast((Protocol.Server_ActorCast*)dataPtr, targetActorId);
                         break;
@@ -205,7 +213,8 @@ namespace BossMod
                 AnimationLockTime = header->animationLockTime,
                 MaxTargets = maxTargets,
                 TargetPos = targetPos,
-                SourceSequence = header->SourceSequence
+                SourceSequence = header->SourceSequence,
+                GlobalSequence = header->globalEffectCounter,
             };
 
             var targets = Math.Min(header->NumTargets, maxTargets);
@@ -225,9 +234,19 @@ namespace BossMod
             EventActionEffect?.Invoke(this, (casterID, info));
         }
 
+        private unsafe void HandleEffectResultBasic(Protocol.Server_EffectResultBasic* p, uint actorID)
+        {
+            EventEffectResult?.Invoke(this, (actorID, p->RelatedActionSequence, p->RelatedTargetIndex));
+        }
+
+        private unsafe void HandleEffectResult(Protocol.Server_EffectResult* p, uint actorID)
+        {
+            EventEffectResult?.Invoke(this, (actorID, p->RelatedActionSequence, p->RelatedTargetIndex));
+        }
+
         private unsafe void HandleActorCast(Protocol.Server_ActorCast* p, uint actorID)
         {
-            EventActorCast?.Invoke(this, (actorID, new(p->SkillType, p->ActionID), p->CastTime, p->TargetID));
+            EventActorCast?.Invoke(this, (actorID, new(p->ActionType, p->SpellID), p->CastTime, p->TargetID));
         }
 
         private unsafe void HandleActorControl(Protocol.Server_ActorControl* p, uint actorID)
@@ -352,7 +371,8 @@ namespace BossMod
                 case Protocol.Opcode.ActorCast:
                     {
                         var p = (Protocol.Server_ActorCast*)dataPtr;
-                        Service.Log($"[Network] - AID={new ActionID(p->SkillType, p->ActionID)}, target={Utils.ObjectString(p->TargetID)}, time={p->CastTime:f2}, rot={p->Rotation:f3}, x={p->PosX}, y={p->PosY}, z={p->PosZ}, u={p->Unknown:X2}, u1={new ActionID(ActionType.Spell, p->Unknown1)}, u2={Utils.ObjectString(p->Unknown2)}, u3={p->Unknown3:X4}");
+                        uint aid = (uint)(p->ActionID - _unkDelta);
+                        Service.Log($"[Network] - AID={new ActionID(p->ActionType, aid)} ({new ActionID(ActionType.Spell, p->SpellID)}), target={Utils.ObjectString(p->TargetID)}, time={p->CastTime:f2} ({p->BaseCastTime100ms * 0.1f:f1}), rot={IntToFloatAngle(p->Rotation)}, targetpos={Utils.Vec3String(IntToFloatCoords(p->PosX, p->PosY, p->PosZ))}, interruptible={p->Interruptible}, u1={p->u1:X2}, u2={Utils.ObjectString(p->u2_objID)}, u3={p->u3:X4}");
                         break;
                     }
                 case Protocol.Opcode.ActorControl:
@@ -406,19 +426,19 @@ namespace BossMod
                 case Protocol.Opcode.EffectResult:
                     {
                         var p = (Protocol.Server_EffectResult*)dataPtr;
-                        Service.Log($"[Network] - seq={p->RelatedActionSequence}, actor={Utils.ObjectString(p->ActorID)}, hp={p->CurrentHP}/{p->MaxHP}, mp={p->CurrentMP}, shield={p->DamageShield}, u={p->Unknown1:X8} {p->Unknown3:X4} {p->Unknown6:X4}");
+                        Service.Log($"[Network] - cnt={p->Count} seq={p->RelatedActionSequence}/{p->RelatedTargetIndex}, actor={Utils.ObjectString(p->ActorID)}, hp={p->CurrentHP}/{p->MaxHP}, class={p->ClassJob} mp={p->CurrentMP}, shield={p->DamageShield}, pad={p->padding1:X2}{p->padding2:X4} {p->padding3:X4}");
                         var cnt = Math.Min(4, (int)p->EffectCount);
                         for (int i = 0; i < cnt; ++i)
                         {
                             var eff = ((Protocol.Server_EffectResultEntry*)p->Effects) + i;
-                            Service.Log($"[Network] -- idx={eff->EffectIndex}, id={Utils.StatusString(eff->EffectID)}, dur={eff->duration:f2}, src={Utils.ObjectString(eff->SourceActorID)}, u={eff->unknown1:X2} {eff->unknown2:X4} {eff->unknown3:X4}");
+                            Service.Log($"[Network] -- idx={eff->EffectIndex}, id={Utils.StatusString(eff->EffectID)}, extra={eff->Extra:X2}, dur={eff->Duration:f2}, src={Utils.ObjectString(eff->SourceActorID)}, pad={eff->padding1:X2} {eff->padding2:X4}");
                         }
                         break;
                     }
                 case Protocol.Opcode.EffectResultBasic:
                     {
                         var p = (Protocol.Server_EffectResultBasic*)dataPtr;
-                        Service.Log($"[Network] - seq={p->RelatedActionSequence}, actor={Utils.ObjectString(p->ActorID)}, hp={p->CurrentHP}, u={p->Unknown1:X8} {p->Unknown2:X8} {p->Unknown3:X4} {p->Unknown4:X4}");
+                        Service.Log($"[Network] - cnt={p->Count} seq={p->RelatedActionSequence}/{p->RelatedTargetIndex}, actor={Utils.ObjectString(p->ActorID)}, hp={p->CurrentHP}, pad={p->padding1:X2}{p->padding2:X4} {p->padding3:X2}{p->padding4:X4} {p->padding5:X8}");
                         break;
                     }
                 case Protocol.Opcode.Waymark:
@@ -455,15 +475,32 @@ namespace BossMod
                         Service.Log($"[Network] - {*(byte*)dataPtr} entries: [{*(uint*)p:X}={*((byte*)p+4)}, ...]");
                         break;
                     }
+                case Protocol.Opcode.Countdown:
+                    {
+                        void* p = (void*)dataPtr;
+                        uint senderID = Utils.ReadField<uint>(p, 0);
+                        ushort time = Utils.ReadField<ushort>(p, 6);
+                        var text = MemoryHelper.ReadStringNullTerminated(dataPtr + 11);
+                        Service.Log($"[Network] - {time}s from {Utils.ObjectString(senderID)} {(Utils.ReadField<byte>(p, 8) != 0 ? "fail-in-combat" : "")} '{text}' {Utils.ReadField<ushort>(p, 4):X4} {Utils.ReadField<byte>(p, 9):X2} {Utils.ReadField<byte>(p, 10):X2}");
+                        break;
+                    }
+                case Protocol.Opcode.CountdownCancel:
+                    {
+                        void* p = (void*)dataPtr;
+                        uint senderID = Utils.ReadField<uint>(p, 0);
+                        var text = MemoryHelper.ReadStringNullTerminated(dataPtr + 8);
+                        Service.Log($"[Network] - from {Utils.ObjectString(senderID)} '{text}' {Utils.ReadField<ushort>(p, 4):X4}");
+                        break;
+                    }
             }
         }
 
         private unsafe void DumpActionEffect(Protocol.Server_ActionEffectHeader* data, ActionEffect* effects, ulong* targetIDs, uint maxTargets, Vector3 targetPos)
         {
             // rotation: 0 -> -180, 65535 -> +180
-            float rot = (data->rotation / 65535.0f * 360.0f) - 180.0f;
+            var rot = IntToFloatAngle(data->rotation);
             uint aid = (uint)(data->actionId - _unkDelta);
-            Service.Log($"[Network] - AID={new ActionID(data->actionType, aid)} (real={data->actionId}, anim={data->actionAnimationId}), animTarget={Utils.ObjectString(data->animationTargetId)}, animLock={data->animationLockTime:f2}, seq={data->SourceSequence}, cntr={data->globalEffectCounter}, rot={rot:f0}, pos={Utils.Vec3String(targetPos)}, var={data->variation}, someTarget={Utils.ObjectString(data->SomeTargetID)}, u={data->unknown20:X2} {data->padding21:X4}");
+            Service.Log($"[Network] - AID={new ActionID(data->actionType, aid)} (real={data->actionId}, anim={data->actionAnimationId}), animTarget={Utils.ObjectString(data->animationTargetId)}, animLock={data->animationLockTime:f2}, seq={data->SourceSequence}, cntr={data->globalEffectCounter}, rot={rot}, pos={Utils.Vec3String(targetPos)}, var={data->variation}, someTarget={Utils.ObjectString(data->SomeTargetID)}, u={data->unknown20:X2} {data->padding21:X4}");
             var targets = Math.Min(data->NumTargets, maxTargets);
             for (int i = 0; i < targets; ++i)
             {
@@ -489,6 +526,11 @@ namespace BossMod
             float fy = y * (2000.0f / 65535) - 1000;
             float fz = z * (2000.0f / 65535) - 1000;
             return new(fx, fy, fz);
+        }
+
+        private static Angle IntToFloatAngle(ushort rot)
+        {
+            return (rot / 65535.0f * (2 * MathF.PI) - MathF.PI).Radians();
         }
     }
 }

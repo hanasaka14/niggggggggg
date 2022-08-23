@@ -14,7 +14,7 @@ namespace BossMod.MNK
         private Rotation.Strategy _strategy;
 
         public Actions(Autorotation autorot, Actor player)
-            : base(autorot, player, Definitions.QuestsPerLevel, Definitions.SupportedActions)
+            : base(autorot, player, Definitions.UnlockQuests, Definitions.SupportedActions)
         {
             _config = Service.Config.Get<MNKConfig>();
             _state = new(autorot.Cooldowns);
@@ -39,7 +39,7 @@ namespace BossMod.MNK
         public override Targeting SelectBetterTarget(Actor initial)
         {
             // TODO: multidotting support...
-            var pos = (_state.Form == Rotation.Form.Coeurl ? Rotation.GetCoeurlFormAction(_state, _strategy.NumAOETargets) : AID.None) switch
+            var pos = (_state.Form == Rotation.Form.Coeurl ? Rotation.GetCoeurlFormAction(_state, _strategy.NumPointBlankAOETargets) : AID.None) switch
             {
                 AID.SnapPunch => Positional.Flank,
                 AID.Demolish => Positional.Rear,
@@ -52,16 +52,22 @@ namespace BossMod.MNK
         {
             UpdatePlayerState();
             FillCommonStrategy(_strategy, CommonDefinitions.IDPotionStr);
-            _strategy.NumAOETargets = autoAction == AutoActionST ? 0 : Autorot.PotentialTargetsInRangeFromPlayer(5).Count();
+            _strategy.NumPointBlankAOETargets = autoAction == AutoActionST ? 0 : Autorot.PotentialTargetsInRangeFromPlayer(5).Count();
+            _strategy.NumEnlightenmentTargets = 0;
+            if (Autorot.PrimaryTarget != null && autoAction != AutoActionST && _state.Unlocked(AID.HowlingFist))
+            {
+                var toTarget = (Autorot.PrimaryTarget.Position - Player.Position).Normalized();
+                _strategy.NumEnlightenmentTargets = Autorot.PotentialTargets.Valid.Where(a => a.Position.InRect(Player.Position, toTarget, 10, 0, _state.Unlocked(AID.Enlightenment) ? 2 : 1)).Count();
+            }
         }
 
         protected override void QueueAIActions()
         {
-            if (_state.Unlocked(MinLevel.SteelPeak))
+            if (_state.Unlocked(AID.SteelPeak))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.Meditation), Player, _strategy.Prepull && _state.Chakra < 5);
-            if (_state.Unlocked(MinLevel.SecondWind))
+            if (_state.Unlocked(AID.SecondWind))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.SecondWind), Player, Player.InCombat && Player.HP.Cur < Player.HP.Max * 0.5f);
-            if (_state.Unlocked(MinLevel.Bloodbath))
+            if (_state.Unlocked(AID.Bloodbath))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.Bloodbath), Player, Player.InCombat && Player.HP.Cur < Player.HP.Max * 0.8f);
         }
 
@@ -102,32 +108,25 @@ namespace BossMod.MNK
 
             _state.Chakra = Service.JobGauges.Get<MNKGauge>().Chakra;
 
-            _state.Form = Rotation.Form.None;
-            _state.FormLeft = _state.DisciplinedFistLeft = 0;
-            foreach (var status in Player.Statuses)
-            {
-                switch ((SID)status.ID)
-                {
-                    case SID.OpoOpoForm:
-                        _state.Form = Rotation.Form.OpoOpo;
-                        _state.FormLeft = StatusDuration(status.ExpireAt);
-                        break;
-                    case SID.RaptorForm:
-                        _state.Form = Rotation.Form.Raptor;
-                        _state.FormLeft = StatusDuration(status.ExpireAt);
-                        break;
-                    case SID.CoeurlForm:
-                        _state.Form = Rotation.Form.Coeurl;
-                        _state.FormLeft = StatusDuration(status.ExpireAt);
-                        break;
-                    case SID.DisciplinedFist:
-                        _state.DisciplinedFistLeft = StatusDuration(status.ExpireAt);
-                        break;
-                }
-            }
+            (_state.Form, _state.FormLeft) = DetermineForm();
+            _state.DisciplinedFistLeft = StatusDetails(Player, SID.DisciplinedFist, Player.InstanceID).Left;
+            _state.LeadenFistLeft = StatusDetails(Player, SID.LeadenFist, Player.InstanceID).Left;
 
-            var demolish = Autorot.PrimaryTarget?.FindStatus(SID.Demolish, Player.InstanceID);
-            _state.TargetDemolishLeft = demolish != null ? StatusDuration(demolish.Value.ExpireAt) : 0;
+            _state.TargetDemolishLeft = StatusDetails(Autorot.PrimaryTarget, SID.Demolish, Player.InstanceID).Left;
+        }
+
+        private (Rotation.Form, float) DetermineForm()
+        {
+            var s = StatusDetails(Player, SID.OpoOpoForm, Player.InstanceID).Left;
+            if (s > 0)
+                return (Rotation.Form.OpoOpo, s);
+            s = StatusDetails(Player, SID.RaptorForm, Player.InstanceID).Left;
+            if (s > 0)
+                return (Rotation.Form.Raptor, s);
+            s = StatusDetails(Player, SID.CoeurlForm, Player.InstanceID).Left;
+            if (s > 0)
+                return (Rotation.Form.Coeurl, s);
+            return (Rotation.Form.None, 0);
         }
 
         private void OnConfigModified(object? sender, EventArgs args)

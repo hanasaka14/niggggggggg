@@ -72,6 +72,7 @@ namespace UIDev
                 case "COM+": ParseActorCombat(payload, true); break;
                 case "COM-": ParseActorCombat(payload, false); break;
                 case "MDLS": ParseActorModelState(payload); break;
+                case "EVTS": ParseActorEventState(payload); break;
                 case "TARG": ParseActorTarget(payload); break;
                 case "TETH": ParseActorTether(payload, true); break;
                 case "TET+": ParseActorTether(payload, true); break; // legacy (up to v4)
@@ -221,6 +222,11 @@ namespace UIDev
             AddOp(new ActorState.OpModelState() { InstanceID = ActorID(payload[2]), Value = byte.Parse(payload[3]) });
         }
 
+        private void ParseActorEventState(string[] payload)
+        {
+            AddOp(new ActorState.OpEventState() { InstanceID = ActorID(payload[2]), Value = byte.Parse(payload[3]) });
+        }
+
         private void ParseActorTarget(string[] payload)
         {
             AddOp(new ActorState.OpTarget() { InstanceID = ActorID(payload[2]), Value = ActorID(payload[3]) });
@@ -242,6 +248,7 @@ namespace UIDev
                 {
                     Action = Action(payload[3]),
                     TargetID = ActorID(payload[4]),
+                    Rotation = payload.Length > 8 ? float.Parse(payload[8]).Degrees() : new(),
                     Location = Vec3(payload[5]),
                     TotalTime = totalTime,
                     FinishAt = DateTime.Parse(payload[0]).AddSeconds(totalTime - float.Parse(parts[0])),
@@ -260,8 +267,15 @@ namespace UIDev
                 AnimationLockTime = float.Parse(payload[5]),
                 MaxTargets = uint.Parse(payload[6]),
                 TargetPos = _version >= 6 ? Vec3(payload[7]) : new(),
+                GlobalSequence = _version >= 7 ? uint.Parse(payload[8]) : 0,
             };
-            for (int i = _version >= 6 ? 8 : 7; i < payload.Length; ++i)
+            int firstTargetPayload = _version switch
+            {
+                <= 5 => 7,
+                6 => 8,
+                _ => 9,
+            };
+            for (int i = firstTargetPayload; i < payload.Length; ++i)
             {
                 var parts = payload[i].Split('!');
                 ActorCastEvent.Target target = new();

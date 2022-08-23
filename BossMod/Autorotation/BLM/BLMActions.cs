@@ -13,17 +13,16 @@ namespace BossMod.BLM
         private BLMConfig _config;
         private Rotation.State _state;
         private Rotation.Strategy _strategy;
-
-        // TODO: this should be done by framework (speculative effect application for actions that we didn't get EffectResult for yet)
-        private DateTime _lastThunderSpeculation;
-        private List<ulong> _lastThunderTargets = new();
+        private DateTime _lastManaTick;
+        private uint _prevMP;
 
         public Actions(Autorotation autorot, Actor player)
-            : base(autorot, player, Definitions.QuestsPerLevel, Definitions.SupportedActions)
+            : base(autorot, player, Definitions.UnlockQuests, Definitions.SupportedActions)
         {
             _config = Service.Config.Get<BLMConfig>();
             _state = new(autorot.Cooldowns);
             _strategy = new();
+            _prevMP = Service.ClientState.LocalPlayer?.CurrentMp ?? 0;
 
             _config.Modified += OnConfigModified;
             OnConfigModified(null, EventArgs.Empty);
@@ -36,8 +35,41 @@ namespace BossMod.BLM
 
         public override Targeting SelectBetterTarget(Actor initial)
         {
-            // TODO: select best target for AOE
-            return new(initial, 25);
+            // TODO: multidot?..
+            var bestTarget = initial;
+            if (_state.Unlocked(AID.Blizzard2))
+            {
+                var bestAOECount = Autorot.PotentialTargetsInRange(initial.Position, 5).Count();
+                foreach (var candidate in Autorot.PotentialTargetsInRangeFromPlayer(25).Exclude(initial))
+                {
+                    var candidateAOECount = Autorot.PotentialTargetsInRange(candidate.Position, 5).Count();
+                    if (candidateAOECount > bestAOECount)
+                    {
+                        bestTarget = candidate;
+                        bestAOECount = candidateAOECount;
+                    }
+                }
+            }
+            return new(bestTarget, 15);
+        }
+
+        protected override void OnTick()
+        {
+            // track mana ticks
+            var currMP = Service.ClientState.LocalPlayer?.CurrentMp ?? 0;
+            if (_prevMP < currMP)
+            {
+                var gauge = Service.JobGauges.Get<BLMGauge>();
+                if (!gauge.InAstralFire)
+                {
+                    var expectedTick = Rotation.MPTick(-gauge.UmbralIceStacks);
+                    if (currMP - _prevMP == expectedTick)
+                    {
+                        _lastManaTick = Autorot.WorldState.CurrentTime;
+                    }
+                }
+            }
+            _prevMP = currMP;
         }
 
         protected override void UpdateInternalState(int autoAction)
@@ -58,9 +90,9 @@ namespace BossMod.BLM
 
         protected override void QueueAIActions()
         {
-            if (_state.Unlocked(MinLevel.Transpose))
+            if (_state.Unlocked(AID.Transpose))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.Transpose), Player, _strategy.Prepull && _state.ElementalLevel > 0 && _state.CurMP < 10000);
-            if (_state.Unlocked(MinLevel.Manaward))
+            if (_state.Unlocked(AID.Manaward))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.Manaward), Player, Player.HP.Cur < Player.HP.Max * 0.8f);
         }
 
@@ -93,42 +125,22 @@ namespace BossMod.BLM
         protected override void OnActionSucceeded(ActorCastEvent ev)
         {
             Log($"Succeeded {ev.Action} @ {ev.MainTargetID:X} [{_state}]");
-            // hack
-            if (ev.Action.Type == ActionType.Spell && (AID)ev.Action.ID is AID.Thunder1 or AID.Thunder2)
-            {
-                _lastThunderSpeculation = Autorot.WorldState.CurrentTime.AddMilliseconds(1000);
-                _lastThunderTargets.Clear();
-                _lastThunderTargets.AddRange(ev.Targets.Select(t => t.ID));
-            }
         }
 
         private void UpdatePlayerState()
         {
             FillCommonPlayerState(_state);
+            _state.TimeToManaTick = 3 - (_lastManaTick != new DateTime() ? (float)(Autorot.WorldState.CurrentTime - _lastManaTick).TotalSeconds % 3 : 0);
 
             var gauge = Service.JobGauges.Get<BLMGauge>();
             _state.ElementalLevel = gauge.InAstralFire ? gauge.AstralFireStacks : -gauge.UmbralIceStacks;
             _state.ElementalLeft = gauge.ElementTimeRemaining * 0.001f;
 
-            _state.TargetThunderLeft = 0;
-            if (Autorot.PrimaryTarget != null)
-            {
-                foreach (var status in Autorot.PrimaryTarget.Statuses)
-                {
-                    switch ((SID)status.ID)
-                    {
-                        case SID.Thunder1:
-                        case SID.Thunder2:
-                            if (status.SourceID == Player.InstanceID)
-                                _state.TargetThunderLeft = StatusDuration(status.ExpireAt);
-                            break;
-                    }
-                }
-                if (_state.TargetThunderLeft == 0 && _lastThunderSpeculation > Autorot.WorldState.CurrentTime && _lastThunderTargets.Contains(Autorot.PrimaryTarget.InstanceID))
-                {
-                    _state.TargetThunderLeft = 21;
-                }
-            }
+            _state.SwiftcastLeft = StatusDetails(Player, SID.Swiftcast, Player.InstanceID).Left;
+            _state.ThundercloudLeft = StatusDetails(Player, SID.Thundercloud, Player.InstanceID).Left;
+            _state.FirestarterLeft = StatusDetails(Player, SID.Firestarter, Player.InstanceID).Left;
+
+            _state.TargetThunderLeft = Math.Max(StatusDetails(Autorot.PrimaryTarget, _state.ExpectedThunder3, Player.InstanceID).Left, StatusDetails(Autorot.PrimaryTarget, SID.Thunder2, Player.InstanceID).Left);
         }
 
         private void OnConfigModified(object? sender, EventArgs args)

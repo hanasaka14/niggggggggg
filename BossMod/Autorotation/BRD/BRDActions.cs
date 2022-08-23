@@ -14,7 +14,7 @@ namespace BossMod.BRD
         private Rotation.Strategy _strategy;
 
         public Actions(Autorotation autorot, Actor player)
-            : base(autorot, player, Definitions.QuestsPerLevel, Definitions.SupportedActions)
+            : base(autorot, player, Definitions.UnlockQuests, Definitions.SupportedActions)
         {
             _config = Service.Config.Get<BRDConfig>();
             _state = new(autorot.Cooldowns);
@@ -41,8 +41,9 @@ namespace BossMod.BRD
         public override Targeting SelectBetterTarget(Actor initial)
         {
             // TODO: min range to better hit clump with cone...
+            // TODO: targeting for rain of death
             var bestTarget = initial;
-            if (_state.Unlocked(MinLevel.QuickNock))
+            if (_state.Unlocked(AID.QuickNock))
             {
                 var bestAOECount = NumTargetsHitByLadonsbite(initial);
                 foreach (var candidate in Autorot.PotentialTargetsInRangeFromPlayer(12).Exclude(initial))
@@ -62,24 +63,20 @@ namespace BossMod.BRD
         {
             UpdatePlayerState();
             FillCommonStrategy(_strategy, CommonDefinitions.IDPotionStr);
-            _strategy.AOE = autoAction switch
-            {
-                AutoActionST => false,
-                AutoActionAOE => true,
-                _ => Autorot.PrimaryTarget != null && NumTargetsHitByLadonsbite(Autorot.PrimaryTarget) >= 2,
-            };
+            _strategy.NumLadonsbiteTargets = Autorot.PrimaryTarget != null && autoAction != AutoActionST && _state.Unlocked(AID.QuickNock) ? NumTargetsHitByLadonsbite(Autorot.PrimaryTarget) : 0;
+            _strategy.NumRainOfDeathTargets = Autorot.PrimaryTarget != null && autoAction != AutoActionST && _state.Unlocked(AID.RainOfDeath) ? NumTargetsHitByRainOfDeath(Autorot.PrimaryTarget) : 0;
         }
 
         protected override void QueueAIActions()
         {
-            if (_state.Unlocked(MinLevel.SecondWind))
+            if (_state.Unlocked(AID.SecondWind))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.SecondWind), Player, Player.InCombat && Player.HP.Cur < Player.HP.Max * 0.5f);
-            if (_state.Unlocked(MinLevel.WardensPaean))
+            if (_state.Unlocked(AID.WardensPaean))
             {
                 var esunableTarget = Autorot.WorldState.Party.WithoutSlot().FirstOrDefault(p => p.Statuses.Any(s => Utils.StatusIsRemovable(s.ID)));
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.WardensPaean), esunableTarget, esunableTarget != null);
             }
-            if (_state.Unlocked(MinLevel.Peloton))
+            if (_state.Unlocked(AID.Peloton))
                 SimulateManualActionForAI(ActionID.MakeSpell(AID.Peloton), Player, !Player.InCombat && _state.PelotonLeft < 3 && AutoAction is AutoActionAIIdleMove or AutoActionAIFightMove);
         }
 
@@ -178,5 +175,7 @@ namespace BossMod.BRD
             var dir = Angle.FromDirection(primary.Position - Player.Position);
             return 1 + Autorot.PotentialTargetsInRangeFromPlayer(12).Count(a => a != primary && a.Position.InCone(Player.Position, dir, 45.Degrees()));
         }
+
+        private int NumTargetsHitByRainOfDeath(Actor primary) => Autorot.PotentialTargetsInRange(primary.Position, 8).Count();
     }
 }

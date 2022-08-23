@@ -31,7 +31,7 @@
         public Burst() : base(ActionID.MakeSpell(AID.Burst), new AOEShapeCircle(10), 4) { }
     }
 
-    class DragonBreath : Components.SelfTargetedAOEs
+    class DragonBreath : Components.SelfTargetedLegacyRotationAOEs
     {
         public DragonBreath() : base(ActionID.MakeSpell(AID.DragonBreath), new AOEShapeRect(30, 4)) { }
     }

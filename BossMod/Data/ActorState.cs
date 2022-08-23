@@ -255,6 +255,20 @@ namespace BossMod
             public override string Str(WorldState? ws) => $"MDLS|{StrActor(ws, InstanceID)}|{Value}";
         }
 
+        public event EventHandler<Actor>? EventStateChanged;
+        public class OpEventState : Operation
+        {
+            public byte Value;
+
+            protected override void ExecActor(WorldState ws, Actor actor)
+            {
+                actor.EventState = Value;
+                ws.Actors.EventStateChanged?.Invoke(ws, actor);
+            }
+
+            public override string Str(WorldState? ws) => $"EVTS|{StrActor(ws, InstanceID)}|{Value}";
+        }
+
         public event EventHandler<Actor>? TargetChanged;
         public class OpTarget : Operation
         {
@@ -308,7 +322,7 @@ namespace BossMod
             }
 
             public override string Str(WorldState? ws) => Value != null
-                ? $"CST+|{StrActor(ws, InstanceID)}|{Value.Action}|{StrActor(ws, Value.TargetID)}|{StrVec3(Value.Location)}|{Utils.CastTimeString(Value, ws?.CurrentTime ?? new())}|{Value.Interruptible}"
+                ? $"CST+|{StrActor(ws, InstanceID)}|{Value.Action}|{StrActor(ws, Value.TargetID)}|{StrVec3(Value.Location)}|{Utils.CastTimeString(Value, ws?.CurrentTime ?? new())}|{Value.Interruptible}|{Value.Rotation}"
                 : $"CST-|{StrActor(ws, InstanceID)}";
         }
 
@@ -327,7 +341,7 @@ namespace BossMod
 
             public override string Str(WorldState? ws)
             {
-                var sb = new StringBuilder($"CST!|{StrActor(ws, InstanceID)}|{Value.Action}|{StrActor(ws, Value.MainTargetID)}|{Value.AnimationLockTime:f2}|{Value.MaxTargets}|{StrVec3(Value.TargetPos)}");
+                var sb = new StringBuilder($"CST!|{StrActor(ws, InstanceID)}|{Value.Action}|{StrActor(ws, Value.MainTargetID)}|{Value.AnimationLockTime:f2}|{Value.MaxTargets}|{StrVec3(Value.TargetPos)}|{Value.GlobalSequence}");
                 foreach (var t in Value.Targets)
                 {
                     sb.Append($"|{StrActor(ws, t.ID)}");

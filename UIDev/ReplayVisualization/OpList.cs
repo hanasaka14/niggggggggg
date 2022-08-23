@@ -13,6 +13,7 @@ namespace UIDev
         private IEnumerable<WorldState.Operation> _ops;
         private Action<DateTime> _scrollTo;
         private List<(DateTime Timestamp, string Text, Action<UITree>? Children, Action? ContextMenu)> _nodes = new();
+        private HashSet<uint> _filteredOIDs = new();
         private HashSet<ActionID> _filteredActions = new();
         private HashSet<uint> _filteredStatuses = new();
         private bool _nodesUpToDate;
@@ -55,7 +56,9 @@ namespace UIDev
 
         public void ClearFilters()
         {
+            _filteredOIDs.Clear();
             _filteredActions.Clear();
+            _filteredStatuses.Clear();
             _nodesUpToDate = false;
         }
 
@@ -65,6 +68,8 @@ namespace UIDev
             if (p.Type is ActorType.Pet or ActorType.Chocobo or ActorType.Area)
                 return false;
             if (p.Type == ActorType.Player && !allowPlayers)
+                return false;
+            if (_filteredOIDs.Contains(p.OID))
                 return false;
             return true;
         }
@@ -95,6 +100,7 @@ namespace UIDev
                 ActorState.OpTargetable op => FilterInterestingActor(op.InstanceID, op.Timestamp, false),
                 ActorState.OpDead op => FilterInterestingActor(op.InstanceID, op.Timestamp, true),
                 ActorState.OpCombat => false,
+                ActorState.OpEventState op => FilterInterestingActor(op.InstanceID, op.Timestamp, false),
                 ActorState.OpTarget => false, // reconsider...
                 ActorState.OpCastInfo op => FilterInterestingActor(op.InstanceID, op.Timestamp, false) && !_filteredActions.Contains(FindCast(FindParticipant(op.InstanceID, op.Timestamp), op.Timestamp, op.Value != null)!.ID),
                 ActorState.OpCastEvent op => FilterInterestingActor(op.InstanceID, op.Timestamp, false) && !_filteredActions.Contains(op.Value.Action),
@@ -113,9 +119,10 @@ namespace UIDev
                 ActorState.OpClassChange op => $"Actor class change: {ActorString(op.InstanceID, op.Timestamp)} -> {op.Class}",
                 ActorState.OpTargetable op => $"{(op.Value ? "Targetable" : "Untargetable")}: {ActorString(op.InstanceID, op.Timestamp)}",
                 ActorState.OpDead op => $"{(op.Value ? "Die" : "Resurrect")}: {ActorString(op.InstanceID, op.Timestamp)}",
+                ActorState.OpEventState op => $"Event state: {ActorString(op.InstanceID, op.Timestamp)} -> {op.Value}",
                 ActorState.OpTether op => $"Tether: {ActorString(op.InstanceID, op.Timestamp)} {op.Value.ID} @ {ActorString(op.Value.Target, op.Timestamp)}",
                 ActorState.OpCastInfo op => $"Cast {(op.Value != null ? "started" : "ended")}: {CastString(op.InstanceID, op.Timestamp, aidType, op.Value != null)}",
-                ActorState.OpCastEvent op => $"Cast event: {ActorString(op.InstanceID, op.Timestamp)}: {op.Value.Action} ({aidType?.GetEnumName(op.Value.Action.ID)}) @ {CastEventTargetString(op.Value, op.Timestamp)} ({op.Value.Targets.Count} targets affected)",
+                ActorState.OpCastEvent op => $"Cast event: {ActorString(op.InstanceID, op.Timestamp)}: {op.Value.Action} ({aidType?.GetEnumName(op.Value.Action.ID)}) @ {CastEventTargetString(op.Value, op.Timestamp)} ({op.Value.Targets.Count} targets affected) #{op.Value.GlobalSequence}",
                 ActorState.OpStatus op => $"Status {(op.Value.ID != 0 ? "gain" : "lose")}: {StatusString(op.InstanceID, op.Index, op.Timestamp, op.Value.ID != 0)}",
                 ActorState.OpIcon op => $"Icon: {ActorString(op.InstanceID, op.Timestamp)} -> {op.IconID}",
                 _ => o.ToString() ?? o.GetType().Name
@@ -146,12 +153,24 @@ namespace UIDev
                 ActorState.OpStatus op => () => ContextMenuActorStatus(op),
                 ActorState.OpCastInfo op => () => ContextMenuActorCast(op),
                 ActorState.OpCastEvent op => () => ContextMenuEventCast(op),
+                ActorState.Operation op => () => ContextMenuActor(op),
                 _ => null,
             };
         }
 
+        private void ContextMenuActor(ActorState.Operation op)
+        {
+            var oid = FindParticipant(op.InstanceID, op.Timestamp)!.OID;
+            if (ImGui.MenuItem($"Filter out OID {oid:X}"))
+            {
+                _filteredOIDs.Add(oid);
+                _nodesUpToDate = false;
+            }
+        }
+
         private void ContextMenuActorStatus(ActorState.OpStatus op)
         {
+            ContextMenuActor(op);
             var s = FindStatus(op.InstanceID, op.Index, op.Timestamp, op.Value.ID != 0)!;
             if (ImGui.MenuItem($"Filter out {Utils.StatusString(s.ID)}"))
             {
@@ -162,6 +181,7 @@ namespace UIDev
 
         private void ContextMenuActorCast(ActorState.OpCastInfo op)
         {
+            ContextMenuActor(op);
             var id = FindCast(FindParticipant(op.InstanceID, op.Timestamp), op.Timestamp, op.Value != null)!.ID;
             if (ImGui.MenuItem($"Filter out {id}"))
             {
@@ -172,6 +192,7 @@ namespace UIDev
 
         private void ContextMenuEventCast(ActorState.OpCastEvent op)
         {
+            ContextMenuActor(op);
             if (ImGui.MenuItem($"Filter out {op.Value.Action}"))
             {
                 _filteredActions.Add(op.Value.Action);

@@ -101,7 +101,7 @@ namespace BossMod
             PrimaryTarget = WorldState.Actors.Find(player?.TargetID ?? 0);
             SecondaryTarget = WorldState.Actors.Find(Mouseover.Instance?.Object?.ObjectId ?? 0);
             PotentialTargets.Clear();
-            if (!(Bossmods.ActiveModule?.FillTargets(PotentialTargets, PartyState.PlayerSlot) ?? false))
+            if (Bossmods.ActiveModule?.StateMachine.ActivePhase == null || !Bossmods.ActiveModule.FillTargets(PotentialTargets, PartyState.PlayerSlot))
                 PotentialTargets.Autofill(WorldState);
 
             Type? classType = null;
@@ -110,14 +110,14 @@ namespace BossMod
                 classType = player.Class switch
                 {
                     Class.WAR => typeof(WAR.Actions),
-                    Class.PLD => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(PLD.Actions) : null,
-                    Class.MNK => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(MNK.Actions) : null,
-                    Class.DRG => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(DRG.Actions) : null,
-                    Class.BRD => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(BRD.Actions) : null,
-                    Class.BLM => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(BLM.Actions) : null,
+                    Class.PLD => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(PLD.Actions) : null,
+                    Class.MNK => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(MNK.Actions) : null,
+                    Class.DRG => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(DRG.Actions) : null,
+                    Class.BRD => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(BRD.Actions) : null,
+                    Class.BLM => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(BLM.Actions) : null,
                     Class.SMN => Service.ClientState.LocalPlayer?.Level <= 30 ? typeof(SMN.Actions) : null,
                     Class.WHM => typeof(WHM.Actions),
-                    Class.SCH => Service.ClientState.LocalPlayer?.Level <= 50 ? typeof(SCH.Actions) : null,
+                    Class.SCH => Service.ClientState.LocalPlayer?.Level <= 52 ? typeof(SCH.Actions) : null,
                     _ => null
                 };
             }
@@ -204,7 +204,8 @@ namespace BossMod
             // normally general action -> spell conversion is done by UseAction before calling UseActionRaw
             // calling UseActionRaw directly is not good: it would call StartCooldown, which would in turn call GetRecastTime, which always returns 5s for general actions
             // this leads to incorrect sprint cooldown (5s instead of 60s), which is just bad
-            var actionAdj = next.Action == CommonDefinitions.IDSprint ? new(ActionType.Spell, 3) : next.Action;
+            // for spells, call GetAdjustedActionId - even though it is typically done correctly by autorotation modules, e.g. planner currenty doesn't support it
+            var actionAdj = next.Action == CommonDefinitions.IDSprint ? new(ActionType.Spell, 3) : next.Action.Type == ActionType.Spell ? new(ActionType.Spell, am.GetAdjustedActionID(next.Action.ID)) : next.Action;
 
             // note: if we cancel movement and start casting immediately, it will be canceled some time later - instead prefer to delay for one frame
             bool lockMovementForNext = _config.PreventMovingWhileCasting && next.Definition.CastTime > 0 && am.GCD() < 0.1f;
@@ -215,12 +216,12 @@ namespace BossMod
             var status = am.GetActionStatus(actionAdj, targetID);
             if (status != 0)
             {
-                Log($"Can't execute {next.Source} action {next.Action} @ {targetID:X}: status {status} '{Service.LuminaRow<Lumina.Excel.GeneratedSheets.LogMessage>(status)?.Text}'");
+                Log($"Can't execute {next.Source} action {next.Action} (=> {actionAdj}) @ {targetID:X}: status {status} '{Service.LuminaRow<Lumina.Excel.GeneratedSheets.LogMessage>(status)?.Text}'");
                 return false;
             }
 
             var res = am.UseActionRaw(actionAdj, targetID, next.TargetPos, next.Action.Type == ActionType.Item ? 65535u : 0);
-            Log($"Auto-execute {next.Source} action {next.Action} @ {targetID:X} {Utils.Vec3String(next.TargetPos)} => {res}");
+            Log($"Auto-execute {next.Source} action {next.Action} (=> {actionAdj}) @ {targetID:X} {Utils.Vec3String(next.TargetPos)} => {res}");
             _classActions.NotifyActionExecuted(next.Action, next.Target);
             return lockMovementForNext;
         }

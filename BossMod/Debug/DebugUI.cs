@@ -41,6 +41,10 @@ namespace BossMod
             var player = Service.ClientState.LocalPlayer;
             ImGui.TextUnformatted($"Current zone: {_ws.CurrentZone}, player=0x{(ulong)Utils.GameObjectInternal(player):X}, playerCID={Service.ClientState.LocalContentId:X}, pos = {Utils.Vec3String(player?.Position ?? new Vector3())}");
 
+            var eventFwk = FFXIVClientStructs.FFXIV.Client.Game.Event.EventFramework.Instance();
+            var instanceDirector = eventFwk != null ? eventFwk->GetInstanceContentDirector() : null;
+            ImGui.TextUnformatted($"Content time left: {(instanceDirector != null ? $"{instanceDirector->ContentDirector.ContentTimeLeft:f1}" : "n/a")}");
+
             if (ImGui.Button("Perform full dump"))
             {
                 DebugObjects.DumpObjectTable();
@@ -115,6 +119,10 @@ namespace BossMod
             {
                 DrawPlayerAttributes();
             }
+            if (ImGui.CollapsingHeader("Countdown"))
+            {
+                DrawCountdown();
+            }
         }
 
         private void DrawStatuses()
@@ -140,13 +148,14 @@ namespace BossMod
 
         private void DrawCastingEnemiesList()
         {
-            ImGui.BeginTable("enemies", 6);
+            ImGui.BeginTable("enemies", 7, ImGuiTableFlags.Resizable);
             ImGui.TableSetupColumn("Caster");
             ImGui.TableSetupColumn("Target");
             ImGui.TableSetupColumn("Action");
             ImGui.TableSetupColumn("Time");
             ImGui.TableSetupColumn("Location");
             ImGui.TableSetupColumn("Position");
+            ImGui.TableSetupColumn("Rotation");
             ImGui.TableHeadersRow();
             foreach (var elem in _ws.Actors)
             {
@@ -160,6 +169,7 @@ namespace BossMod
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(Utils.CastTimeString(elem.CastInfo, _ws.CurrentTime));
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(Utils.Vec3String(elem.CastInfo.Location));
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(elem.Position.ToString());
+                ImGui.TableNextColumn(); ImGui.TextUnformatted(elem.CastInfo.Rotation.ToString());
             }
             ImGui.EndTable();
         }
@@ -201,6 +211,11 @@ namespace BossMod
 
         private unsafe void DrawPlayerAttributes()
         {
+            if (ImGui.Button("Clear trial"))
+            {
+                Utils.WriteField((void*)Service.Condition.Address, (int)Dalamud.Game.ClientState.Conditions.ConditionFlag.OnFreeTrial, false);
+            }
+
             var uiState = FFXIVClientStructs.FFXIV.Client.Game.UI.UIState.Instance();
             ImGui.BeginTable("attrs", 2);
             ImGui.TableSetupColumn("Index");
@@ -213,6 +228,14 @@ namespace BossMod
                 ImGui.TableNextColumn(); ImGui.TextUnformatted(uiState->PlayerState.Attributes[i].ToString());
             }
             ImGui.EndTable();
+        }
+
+        private unsafe void DrawCountdown()
+        {
+            var agent = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentId.CountDownSettingDialog);
+            ImGui.TextUnformatted($"Active: {Utils.ReadField<byte>(agent, 56) != 0}");
+            ImGui.TextUnformatted($"Initiator: {Utils.ObjectString(Utils.ReadField<uint>(agent, 60))}");
+            ImGui.TextUnformatted($"Time left: {Utils.ReadField<float>(agent, 40):f3}");
         }
     }
 }

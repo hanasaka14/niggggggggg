@@ -27,7 +27,7 @@
         public LumberingLeap() : base(ActionID.MakeSpell(AID.LumberingLeapAOE), new AOEShapeCircle(12)) { }
     }
 
-    class ColossalSlam : Components.SelfTargetedAOEs
+    class ColossalSlam : Components.SelfTargetedLegacyRotationAOEs
     {
         public ColossalSlam() : base(ActionID.MakeSpell(AID.ColossalSlam), new AOEShapeCone(30, 30.Degrees())) { }
     }

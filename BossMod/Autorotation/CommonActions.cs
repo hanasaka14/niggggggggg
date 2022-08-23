@@ -88,7 +88,7 @@ namespace BossMod
 
         public SupportedAction SupportedSpell<AID>(AID aid) where AID : Enum => SupportedActions[ActionID.MakeSpell(aid)];
 
-        protected unsafe CommonActions(Autorotation autorot, Actor player, QuestLockEntry[] unlockData, Dictionary<ActionID, ActionDefinition> supportedActions)
+        protected unsafe CommonActions(Autorotation autorot, Actor player, uint[] unlockData, Dictionary<ActionID, ActionDefinition> supportedActions)
         {
             Player = player;
             Autorot = autorot;
@@ -111,6 +111,7 @@ namespace BossMod
                 Log($"Auto action {AutoAction} expired");
                 AutoAction = AutoActionNone;
             }
+            OnTick();
         }
 
         // this is called from actionmanager's post-update callback
@@ -132,6 +133,21 @@ namespace BossMod
         public float StatusDuration(DateTime expireAt)
         {
             return Math.Max((float)(expireAt - Autorot.WorldState.CurrentTime).TotalSeconds, 0.0f);
+        }
+
+        // this also checks pending statuses
+        // note that we check pending statuses first - otherwise we get the same problem with double refresh if we try to refresh early (we find old status even though we have pending one)
+        public (float Left, int Stacks) StatusDetails<SID>(Actor? actor, SID id, ulong sourceID, float pendingDuration = 1000) where SID : Enum
+        {
+            if (actor == null)
+                return (0, 0);
+            var pending = Autorot.WorldState.PendingEffects.PendingStatus(actor.InstanceID, (uint)(object)id, sourceID);
+            if (pending != null)
+                return (pendingDuration, pending.Value);
+            var status = actor.FindStatus(id, sourceID);
+            if (status != null)
+                return (StatusDuration(status.Value.ExpireAt), status.Value.Extra & 0xFF);
+            return (0, 0);
         }
 
         // check whether specified status is a damage buff
@@ -270,6 +286,7 @@ namespace BossMod
 
         public abstract void Dispose();
         public virtual Targeting SelectBetterTarget(Actor initial) => new(initial);
+        protected virtual void OnTick() { }
         protected abstract void UpdateInternalState(int autoAction);
         protected abstract void QueueAIActions();
         protected abstract NextAction CalculateAutomaticGCD();
@@ -306,7 +323,8 @@ namespace BossMod
         {
             var am = ActionManagerEx.Instance!;
             var pc = Service.ClientState.LocalPlayer;
-            s.Level = _lock.AdjustLevel(pc?.Level ?? 0);
+            s.Level = pc?.Level ?? 0;
+            s.UnlockProgress = _lock.Progress();
             s.CurMP = pc?.CurrentMp ?? 0;
             s.AnimationLock = am.EffectiveAnimationLock;
             s.AnimationLockDelay = am.EffectiveAnimationLockDelay;
