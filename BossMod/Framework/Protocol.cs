@@ -96,6 +96,7 @@ namespace BossMod
             Countdown = 0x00D4,
 
             // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
+            // First match
             CountdownCancel = 0x0151,
 
             // 66 89 44 24 4C F3 0F 11 4C 24 54 F3 0F 11 44 24 58
