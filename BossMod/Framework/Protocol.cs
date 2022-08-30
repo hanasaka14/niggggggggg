@@ -77,8 +77,8 @@ namespace BossMod
 
             // below are opcodes i've reversed myself...
 
-            // Scan sig then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
-            EnvironmentControl = 0x0130, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
+            // Scan sig, select second match then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
+            EnvironmentControl = 0x009A, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
             
             // 还没找到Sig 不过暂时也没用到
             UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
