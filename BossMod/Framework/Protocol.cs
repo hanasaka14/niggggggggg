@@ -90,7 +90,7 @@ namespace BossMod
             UpdateHater = 0x031B, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // 48 8D 54 24 20 45 33 C9 C7 44 24 20
-            ActionRequest = 0x0212, // just begin casting return...
+            ActionRequest = 0x0230, // just begin casting return...
 
             // E8 ? ? ? ? 84 C0 74 ? B0 ? EB ? 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 CC CC CC CC CC CC 40 53
             Countdown = 0x00D4,
