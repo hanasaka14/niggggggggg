@@ -5,7 +5,7 @@
     {
         public enum Corner { NW, NE, SE, SW }
 
-        [PropertyDisplay("Intemperance: corner that swaps with N on asymmetrical pattern")]
+        [PropertyDisplay("冰火侵蚀: corner that swaps with N on asymmetrical pattern")]
         public Corner IntemperanceAsymmetricalSwapCorner = Corner.NW;
     }
 }

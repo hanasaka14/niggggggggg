@@ -38,7 +38,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
             Dictionary<AID, (uint seqID, Action<uint> buildState)> fork = new();
             fork[AID.AetherialShackles] = (1, Fork1);
             fork[AID.ShacklesOfTime] = (2, Fork2);
-            CastStartFork(id + 0x310000, fork, 6.2f, "Shackles+Aetherchains -or- ShacklesOfTime+Knockback"); // first branch delay = 7.8
+            CastStartFork(id + 0x310000, fork, 6.2f, "结咒魔锁+惩罚爆锁 -或- 限时魔锁+击退"); // first branch delay = 7.8
         }
 
         // if delay is >0, build cast-start + cast-end states, otherwise build only cast-end state (used for first cast after fork)
@@ -52,19 +52,19 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
 
         private void HeavyHand(uint id, float delay)
         {
-            Cast(id, AID.HeavyHand, delay, 5, "Tankbuster")
+            Cast(id, AID.HeavyHand, delay, 5, "坦克死刑")
                 .SetHint(StateMachine.StateHint.Tankbuster);
         }
 
         private void WarderWrath(uint id, float delay)
         {
-            Cast(id, AID.WarderWrath, delay, 5, "Raidwide")
+            Cast(id, AID.WarderWrath, delay, 5, "全屏伤害")
                 .SetHint(StateMachine.StateHint.Raidwide);
         }
 
         private void Aetherchain(uint id, float delay)
         {
-            Cast(id, AID.Aetherchain, delay, 5, "Aetherchain")
+            Cast(id, AID.Aetherchain, delay, 5, "惩罚爆锁")
                 .ActivateOnEnter<AetherExplosion>()
                 .DeactivateOnExit<AetherExplosion>();
         }
@@ -72,7 +72,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
         // aetherial shackles is paired either with wrath (first time) or two aetherchains (second time)
         private void AetherialShackles(uint id, float delay, bool withAetherchains)
         {
-            CastMaybeOmitStart(id, AID.AetherialShackles, delay, 3, "Shackles")
+            CastMaybeOmitStart(id, AID.AetherialShackles, delay, 3, "结咒魔锁")
                 .ActivateOnEnter<Shackles>()
                 .SetHint(StateMachine.StateHint.PositioningStart);
 
@@ -88,21 +88,21 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
 
             // ~19sec after cast end
             // technically, resolve happens ~0.4sec before second aetherchain cast end, but that's irrelevant
-            ComponentCondition<Shackles>(id + 0x2000, withAetherchains ? 0 : 9.7f, comp => comp.NumExpiredDebuffs >= 2, "Shackles resolve")
+            ComponentCondition<Shackles>(id + 0x2000, withAetherchains ? 0 : 9.7f, comp => comp.NumExpiredDebuffs >= 2, "结咒魔锁 结束")
                 .DeactivateOnExit<Shackles>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
         }
 
         private void FourfoldShackles(uint id, float delay)
         {
-            Cast(id, AID.FourShackles, delay, 3, "FourShackles")
+            Cast(id, AID.FourShackles, delay, 3, "结咒四连魔锁")
                 .ActivateOnEnter<Shackles>()
                 .SetHint(StateMachine.StateHint.PositioningStart);
             // note that it takes almost a second for debuffs to be applied
-            ComponentCondition<Shackles>(id + 0x10, 8.9f, comp => comp.NumExpiredDebuffs >= 2, "Hit1", 1, 3);
-            ComponentCondition<Shackles>(id + 0x20, 5, comp => comp.NumExpiredDebuffs >= 4, "Hit2");
-            ComponentCondition<Shackles>(id + 0x30, 5, comp => comp.NumExpiredDebuffs >= 6, "Hit3");
-            ComponentCondition<Shackles>(id + 0x40, 5, comp => comp.NumExpiredDebuffs >= 8, "Hit4")
+            ComponentCondition<Shackles>(id + 0x10, 8.9f, comp => comp.NumExpiredDebuffs >= 2, "第1下", 1, 3);
+            ComponentCondition<Shackles>(id + 0x20, 5, comp => comp.NumExpiredDebuffs >= 4, "第2下");
+            ComponentCondition<Shackles>(id + 0x30, 5, comp => comp.NumExpiredDebuffs >= 6, "第3下");
+            ComponentCondition<Shackles>(id + 0x40, 5, comp => comp.NumExpiredDebuffs >= 8, "第4下")
                 .DeactivateOnExit<Shackles>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
         }
@@ -110,7 +110,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
         // shackles of time is paired either with heavy hand or knockback mechanics; also cast-start sometimes is omitted if delay is 0, since it is used to determine fork path
         private void ShacklesOfTime(uint id, float delay, bool withKnockback)
         {
-            var cast = CastMaybeOmitStart(id, AID.ShacklesOfTime, delay, 4, "ShacklesOfTime")
+            var cast = CastMaybeOmitStart(id, AID.ShacklesOfTime, delay, 4, "限时魔锁")
                 .ActivateOnEnter<AetherExplosion>()
                 .SetHint(StateMachine.StateHint.PositioningStart);
 
@@ -124,7 +124,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
             }
 
             // ~15s from cast end
-            ComponentCondition<AetherExplosion>(id + 0x2000, withKnockback ? 3.4f : 4.7f, comp => !comp.SOTActive, "Shackles resolve")
+            ComponentCondition<AetherExplosion>(id + 0x2000, withKnockback ? 3.4f : 4.7f, comp => !comp.SOTActive, "限时魔锁 结束")
                 .DeactivateOnExit<AetherExplosion>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
         }
@@ -135,7 +135,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
                 .SetHint(StateMachine.StateHint.PositioningStart);
             CastEnd(id + 1, 11.5f)
                 .ActivateOnEnter<Flails>();
-            ComponentCondition<Flails>(id + 2, 3.6f, comp => comp.NumCasts == 2, "Flails")
+            ComponentCondition<Flails>(id + 2, 3.6f, comp => comp.NumCasts == 2, "惩罚抽击")
                 .DeactivateOnExit<Flails>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
         }
@@ -147,7 +147,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
             CastEnd(id + 1, 11.5f)
                 .ActivateOnEnter<Flails>()
                 .ActivateOnEnter<AetherExplosion>();
-            ComponentCondition<Flails>(id + 2, 3.6f, comp => comp.NumCasts == 2, "Aetherflail")
+            ComponentCondition<Flails>(id + 2, 3.6f, comp => comp.NumCasts == 2, "惩罚爆锁")
                 .DeactivateOnExit<Flails>()
                 .DeactivateOnExit<AetherExplosion>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
@@ -157,10 +157,10 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
         {
             CastStartMulti(id, new AID[] { AID.KnockbackGrace, AID.KnockbackPurge }, delay)
                 .SetHint(StateMachine.StateHint.PositioningStart, positioningHints);
-            CastEnd(id + 1, 5, "Knockback")
+            CastEnd(id + 1, 5, "击退")
                 .ActivateOnEnter<Knockback>()
                 .SetHint(StateMachine.StateHint.Tankbuster);
-            ComponentCondition<Knockback>(id + 2, 4.3f, comp => comp.AOEDone, "Explode")
+            ComponentCondition<Knockback>(id + 2, 4.3f, comp => comp.AOEDone, "爆炸")
                 .DeactivateOnExit<Knockback>()
                 .SetHint(StateMachine.StateHint.PositioningEnd, positioningHints);
         }
@@ -168,44 +168,44 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
         // full intemperance phases (overlap either with 2 wraths or with flails)
         private void IntemperancePhase(uint id, float delay, bool withWraths)
         {
-            Cast(id, AID.Intemperance, delay, 2, "Intemperance");
+            Cast(id, AID.Intemperance, delay, 2, "冰火侵蚀");
             CastStartMulti(id + 0x1000, new AID[] { AID.IntemperateTormentUp, AID.IntemperateTormentDown }, 5.9f)
                 .ActivateOnEnter<Intemperance>();
             CastEnd(id + 0x1001, 10);
-            ComponentCondition<Intemperance>(id + 0x2000, 1.2f, comp => comp.NumExplosions > 0, "Cube1", 0.2f)
+            ComponentCondition<Intemperance>(id + 0x2000, 1.2f, comp => comp.NumExplosions > 0, "方块1", 0.2f)
                 .SetHint(StateMachine.StateHint.PositioningStart);
 
             if (withWraths)
             {
                 WarderWrath(id + 0x3000, 1);
-                ComponentCondition<Intemperance>(id + 0x4000, 5, comp => comp.NumExplosions > 1, "Cube2", 0.2f);
+                ComponentCondition<Intemperance>(id + 0x4000, 5, comp => comp.NumExplosions > 1, "方块2", 0.2f);
                 WarderWrath(id + 0x5000, 0.2f);
             }
             else
             {
                 CastStartMulti(id + 0x3000, new AID[] { AID.GaolerFlailRL, AID.GaolerFlailLR, AID.GaolerFlailIO1, AID.GaolerFlailIO2, AID.GaolerFlailOI1, AID.GaolerFlailOI2 }, 3);
-                ComponentCondition<Intemperance>(id + 0x4000, 8, comp => comp.NumExplosions > 1, "Cube2")
+                ComponentCondition<Intemperance>(id + 0x4000, 8, comp => comp.NumExplosions > 1, "方块2")
                     .ActivateOnEnter<Flails>();
                 CastEnd(id + 0x5000, 3.5f);
-                ComponentCondition<Flails>(id + 0x5001, 3.6f, comp => comp.NumCasts == 2, "Flails")
+                ComponentCondition<Flails>(id + 0x5001, 3.6f, comp => comp.NumCasts == 2, "全屏伤害")
                     .DeactivateOnExit<Flails>();
             }
 
-            ComponentCondition<Intemperance>(id + 0x6000, withWraths ? 5.8f : 3.9f, comp => comp.NumExplosions > 2, "Cube3")
+            ComponentCondition<Intemperance>(id + 0x6000, withWraths ? 5.8f : 3.9f, comp => comp.NumExplosions > 2, "方块3")
                 .DeactivateOnExit<Intemperance>()
                 .SetHint(StateMachine.StateHint.PositioningEnd);
         }
 
         private void ShiningCells(uint id, float delay)
         {
-            var s = Cast(id, AID.ShiningCells, delay, 7, "Cells")
+            var s = Cast(id, AID.ShiningCells, delay, 7, "光炎监狱")
                 .SetHint(StateMachine.StateHint.Raidwide);
             s.Raw.Exit.Add(() => Module.Arena.Bounds = new ArenaBoundsCircle(Module.Arena.Bounds.Center, Module.Arena.Bounds.HalfSize));
         }
 
         private void SlamShut(uint id, float delay)
         {
-            var s = Cast(id, AID.SlamShut, delay, 7, "SlamShut")
+            var s = Cast(id, AID.SlamShut, delay, 7, "监狱封闭")
                 .SetHint(StateMachine.StateHint.Raidwide);
             s.Raw.Exit.Add(() => Module.Arena.Bounds = new ArenaBoundsSquare(Module.Arena.Bounds.Center, Module.Arena.Bounds.HalfSize));
         }
@@ -237,7 +237,7 @@ namespace BossMod.Endwalker.Savage.P1SErichthonios
             WarderWrath(id + 0x30000, 10.7f);
             WarderWrath(id + 0x40000, 4.2f);
             WarderWrath(id + 0x50000, 4.2f);
-            Cast(id + 0x60000, AID.Enrage, 8.2f, 12, "Enrage");
+            Cast(id + 0x60000, AID.Enrage, 8.2f, 12, "狂暴");
         }
     }
 }
