@@ -78,29 +78,29 @@ namespace BossMod
             // below are opcodes i've reversed myself...
 
             // Scan sig, select second match then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
-            EnvironmentControl = 0x009A, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
+            EnvironmentControl = 0x03AF, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
             
             // 还没找到Sig 不过暂时也没用到
             UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
 
             // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
-            UpdateHate = 0x038B, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
+            UpdateHate = 0x0366, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ?
-            UpdateHater = 0x031B, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
+            UpdateHater = 0x0320, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // 48 8D 54 24 20 45 33 C9 C7 44 24 20
-            ActionRequest = 0x0212, // just begin casting return...
+            ActionRequest = 0x0069, // just begin casting return...
 
             // E8 ? ? ? ? 84 C0 74 ? B0 ? EB ? 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 CC CC CC CC CC CC 40 53
-            Countdown = 0x00D4,
+            Countdown = 0x0360,
 
             // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
             // First match
-            CountdownCancel = 0x0151,
+            CountdownCancel = 0x00E7,
 
             // 66 89 44 24 4C F3 0F 11 4C 24 54 F3 0F 11 44 24 58
-            ActionRequestGroundTargeted = 0x03D3, // XIVAlexander
+            ActionRequestGroundTargeted = 0x025B, // XIVAlexander
             // old - 0x1fd == EventObjSpawn? for stuff like exit points, etc.
         }
 
