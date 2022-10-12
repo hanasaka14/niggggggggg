@@ -7,22 +7,21 @@ namespace BossMod
     {
         public enum Opcode
         {
-            // opcodes from machina
             StatusEffectList = 0x02DE,
             StatusEffectList2 = 0x0168,
             StatusEffectList3 = 0x0175,
             BossStatusEffectList = 0x00E2,
-            ActionEffect1 = 0x0228, // Machina calls it AbilityN, size=124
-            ActionEffect8 = 0x00EF, // size=636
+            ActionEffect1 = 0x0228,
+            ActionEffect8 = 0x00EF,
             ActionEffect16 = 0x00C3,
             ActionEffect24 = 0x03BF,
             ActionEffect32 = 0x02B2,
             ActorCast = 0x02E5,
             EffectResult = 0x034C,
             EffectResultBasic = 0x0204,
-            ActorControl = 0x01D4, // look at toggle weapon
-            ActorControlSelf = 0x012C, // look at cooldown
-            ActorControlTarget = 0x033D, // look at target change
+            ActorControl = 0x01D4,
+            ActorControlSelf = 0x012C,
+            ActorControlTarget = 0x033D,
             UpdateHpMpTp = 0x01F8,
             PlayerSpawn = 0x0068,
             NpcSpawn = 0x015D,
@@ -30,9 +29,9 @@ namespace BossMod
             ActorMove = 0x021E,
             ActorSetPos = 0x011A,
             ActorGauge = 0x03C6,
-            PresetWaymark = 0x010B, // FFXIVOpcodes calls this PlaceFieldMarkerPreset
-            Waymark = 0x02D1, // FFXIVOpcodes calls this PlaceFieldMarker
-            SystemLogMessage = 0x035B, // FFXIVOpcodes calls this SomeDirectorUnk4
+            PresetWaymark = 0x010B,
+            Waymark = 0x02D1,
+            SystemLogMessage = 0x035B,
 
             // opcodes from FFXIVOpcodes
             PlayerSetup = 0x0205,
