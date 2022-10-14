@@ -73,7 +73,7 @@ namespace BossMod
             {
                 foreach (var r in typeof(Assignment).GetEnumValues())
                     ImGui.TableSetupColumn(r.ToString(), ImGuiTableColumnFlags.None, 25);
-                ImGui.TableSetupColumn("Name");
+                ImGui.TableSetupColumn("名称");
                 ImGui.TableHeadersRow();
 
                 List<(ulong cid, string name, Role role, Assignment assignment)> party = new();
@@ -108,7 +108,7 @@ namespace BossMod
                 if (AssignmentsPerSlot(ws.Party).Length == 0)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, 0xff00ffff);
-                    ImGui.TextUnformatted("无效分配: 每个职业都应该有至少一个玩家");
+                    ImGui.TextUnformatted("无效分配: 每个职责都应该有至少一个玩家");
                     ImGui.PopStyleColor();
                 }
                 else
