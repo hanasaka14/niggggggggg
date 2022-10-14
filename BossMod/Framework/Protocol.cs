@@ -74,13 +74,26 @@ namespace BossMod
             EventPlay4 = 0x00C8,
             Logout = 0x0316,
 
+            // invalid opcode for cn version of the game
+            EffectResult1 = 0x034C, // valid
+            EffectResult4 = 0x0124,
+            EffectResult8 = 0x0238,
+            EffectResult16 = 0x0588,
+            EffectResultBasic1 = 0x0204, // valid
+            EffectResultBasic4 = 0x02C8,
+            EffectResultBasic8 = 0x01F3,
+            EffectResultBasic16 = 0x00CE,
+            EffectResultBasic32 = 0x0208,
+            EffectResultBasic64 = 0x0408,
+
             // below are opcodes i've reversed myself...
 
-            // Scan sig, select second match then x-ref: 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
+            // Second match
+            // 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 48 8B D3 48 83 C4 ? 5B E9 ? ? ? ? CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 40 53 48 83 EC ? 48 8B D9 E8 ? ? ? ? 48 8B C8 E8 ? ? ? ? 48 85 C0 74 ? 48 8B D3
             EnvironmentControl = 0x03AF, // updated - size=16, look for a bunch of messages starting with 0x8003759F after P1N intemperance cast...
-            
-            // 还没找到Sig 不过暂时也没用到
-            UpdateRecastTimes = 0xF23C, // payload = 80 floats 'elapsed' + 80 floats 'total'
+
+            // 48 89 5C 24 08 57 48 83 EC ? 48 8B DA 33 FF 90
+            UpdateRecastTimes = 0x00E5, // payload = 80 floats 'elapsed' + 80 floats 'total'
 
             // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
             UpdateHate = 0x0366, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
@@ -94,12 +107,16 @@ namespace BossMod
             // E8 ? ? ? ? 84 C0 74 ? B0 ? EB ? 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 CC CC CC CC CC CC 40 53
             Countdown = 0x0360,
 
-            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
             // First match
+            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
             CountdownCancel = 0x00E7,
 
             // 66 89 44 24 4C F3 0F 11 4C 24 54 F3 0F 11 44 24 58
             ActionRequestGroundTargeted = 0x025B, // XIVAlexander
+
+            // 44 8B 09 4C 8D 41 34
+            RSVData = 0x018C,
+
             // old - 0x1fd == EventObjSpawn? for stuff like exit points, etc.
         }
 
