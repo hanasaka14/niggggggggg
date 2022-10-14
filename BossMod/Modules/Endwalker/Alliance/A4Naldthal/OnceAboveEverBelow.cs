@@ -40,6 +40,11 @@ namespace BossMod.Endwalker.Alliance.A4Naldthal
 
         public override void OnCastStarted(BossModule module, Actor caster, ActorCastInfo spell)
         {
+            if ((AID)spell.Action.ID is AID.RandomAssID or AID.OnceAboveEverBelowRed or AID.OnceAboveEverBelowBlue)
+            {
+                _active.Clear();
+            }
+
             if ((AID)spell.Action.ID is AID.EverfireFirst or AID.OnceBurnedFirst)
             {
                 WDir dir = MathF.Abs(caster.Position.X - module.Bounds.Center.X) < 1 ? new(1, 0) : new(0, 1);
