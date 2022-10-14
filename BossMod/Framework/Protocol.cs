@@ -17,8 +17,6 @@ namespace BossMod
             ActionEffect24 = 0x03BF,
             ActionEffect32 = 0x02B2,
             ActorCast = 0x02E5,
-            EffectResult = 0x034C,
-            EffectResultBasic = 0x0204,
             ActorControl = 0x01D4,
             ActorControlSelf = 0x012C,
             ActorControlTarget = 0x033D,
