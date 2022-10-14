@@ -337,6 +337,7 @@ namespace BossMod
             RelicInfuseMsg = 377, // from dissector
             PlayerCurrency = 378, // from dissector
             AetherReductionDlg = 381, // from dissector
+            PlayActionTimeline = 407, // seems to be equivalent to 412?..
             EObjSetState = 409, // from dissector
             Unk6 = 412, // from dissector
             EObjAnimation = 413, // from dissector
@@ -469,7 +470,7 @@ namespace BossMod
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct Server_EffectResultEntry
+        public struct Server_EffectResultEffectEntry
         {
             public byte EffectIndex;
             public byte padding1;
@@ -480,12 +481,10 @@ namespace BossMod
             public uint SourceActorID;
         }
 
+        // EffectResultN has byte NumEntries at offset 0 and array EffectResultEntry[N] at offset 4
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public unsafe struct Server_EffectResult
+        public unsafe struct Server_EffectResultEntry
         {
-            public byte Count; // always 1?..
-            public byte padding1;
-            public short padding2;
             public uint RelatedActionSequence;
             public uint ActorID;
             public uint CurrentHP;
@@ -496,22 +495,19 @@ namespace BossMod
             public byte DamageShield;
             public byte EffectCount;
             public ushort padding3;
-            public fixed byte Effects[4 * 4 * 4]; // Server_EffectResultEntry[4]
+            public fixed byte Effects[4 * 4 * 4]; // Server_EffectResultEffectEntry[4]
         }
 
+        // EffectResultBasicN has byte NumEntries at offset 0 and array EffectResultBasicEntry[N] at offset 4
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public unsafe struct Server_EffectResultBasic
+        public unsafe struct Server_EffectResultBasicEntry
         {
-            public byte Count; // always 1?..
-            public byte padding1;
-            public short padding2;
             public uint RelatedActionSequence;
             public uint ActorID;
             public uint CurrentHP;
             public byte RelatedTargetIndex;
             public byte padding3;
             public ushort padding4;
-            public uint padding5;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

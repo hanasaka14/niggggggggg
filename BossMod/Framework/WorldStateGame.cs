@@ -1,4 +1,5 @@
-﻿using Dalamud.Game.ClientState.Objects.Enums;
+﻿using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using System;
 using System.Collections.Generic;
@@ -13,21 +14,27 @@ namespace BossMod
         private PartyAlliance _alliance = new();
         private List<Operation> _globalOps = new();
         private Dictionary<ulong, List<Operation>> _actorOps = new();
+        private Actor?[] _actorsByIndex;
 
         private List<(ulong Caster, ActorCastEvent Event)> _castEvents = new();
         private List<(uint Seq, ulong Target, int TargetIndex)> _confirms = new();
 
         public WorldStateGame(Network network)
         {
+            _actorsByIndex = new Actor?[Service.ObjectTable.Length];
             _network = network;
             _network.EventActionEffect += OnNetworkActionEffect;
             _network.EventEffectResult += OnNetworkEffectResult;
             _network.EventActorControlTargetIcon += OnNetworkActorControlTargetIcon;
             _network.EventActorControlTether += OnNetworkActorControlTether;
             _network.EventActorControlTetherCancel += OnNetworkActorControlTetherCancel;
+            _network.EventActorControlEObjSetState += OnNetworkActorControlEObjSetState;
+            _network.EventActorControlEObjAnimation += OnNetworkActorControlEObjAnimation;
+            _network.EventActorControlPlayActionTimeline += OnNetworkActorControlPlayActionTimeline;
             _network.EventActorControlSelfDirectorUpdate += OnNetworkActorControlSelfDirectorUpdate;
             _network.EventEnvControl += OnNetworkEnvControl;
             _network.EventWaymark += OnNetworkWaymark;
+            _network.EventRSVData += OnNetworkRSVData;
         }
 
         public void Dispose()
@@ -37,9 +44,13 @@ namespace BossMod
             _network.EventActorControlTargetIcon -= OnNetworkActorControlTargetIcon;
             _network.EventActorControlTether -= OnNetworkActorControlTether;
             _network.EventActorControlTetherCancel -= OnNetworkActorControlTetherCancel;
+            _network.EventActorControlEObjSetState -= OnNetworkActorControlEObjSetState;
+            _network.EventActorControlEObjAnimation -= OnNetworkActorControlEObjAnimation;
+            _network.EventActorControlPlayActionTimeline -= OnNetworkActorControlPlayActionTimeline;
             _network.EventActorControlSelfDirectorUpdate -= OnNetworkActorControlSelfDirectorUpdate;
             _network.EventEnvControl -= OnNetworkEnvControl;
             _network.EventWaymark -= OnNetworkWaymark;
+            _network.EventRSVData -= OnNetworkRSVData;
         }
 
         public void Update(TimeSpan prevFramePerf)
@@ -70,21 +81,35 @@ namespace BossMod
 
         private void UpdateActors()
         {
-            Dictionary<ulong, GameObject> seenIDs = new();
-            foreach (var obj in Service.ObjectTable)
-                if (obj.ObjectId != GameObject.InvalidGameObjectId)
-                    seenIDs[obj.ObjectId] = obj;
+            for (int i = 0; i < _actorsByIndex.Length; ++i)
+            {
+                var actor = _actorsByIndex[i];
+                var obj = Service.ObjectTable[i];
 
-            List<Actor> delActors = new();
-            foreach (var e in Actors)
-                if (!seenIDs.ContainsKey(e.InstanceID))
-                    delActors.Add(e);
+                if (obj != null && obj.ObjectId == GameObject.InvalidGameObjectId)
+                    obj = null; // ignore non-networked objects (really?..)
 
-            foreach (var actor in delActors)
-                RemoveActor(actor);
+                if (obj != null && (obj.ObjectId & 0xFF000000) == 0xFF000000)
+                {
+                    Service.Log($"[WorldState] Skipping bad object #{i} with id {obj.ObjectId:X}");
+                    obj = null;
+                }
 
-            foreach ((_, var obj) in seenIDs)
-                UpdateActor(obj);
+                if (actor != null && actor.InstanceID != obj?.ObjectId)
+                {
+                    RemoveActor(actor);
+                    actor = _actorsByIndex[i] = null;
+                }
+
+                if (obj != null)
+                {
+                    if (actor != Actors.Find(obj.ObjectId))
+                    {
+                        Service.Log($"[WorldState] Actor position mismatch for #{i} {actor}");
+                    }
+                    UpdateActor(obj, i, actor);
+                }
+            }
 
             foreach (var (id, ops) in _actorOps)
                 Service.Log($"[WorldState] {ops.Count} actor events for unknown entity {id:X}");
@@ -97,44 +122,48 @@ namespace BossMod
             Execute(new ActorState.OpDestroy() { InstanceID = actor.InstanceID });
         }
 
-        private void UpdateActor(GameObject obj)
+        private void UpdateActor(GameObject obj, int index, Actor? act)
         {
             var character = obj as Character;
             var name = obj.Name.TextValue;
             var classID = (Class)(character?.ClassJob.Id ?? 0);
             var posRot = new Vector4(obj.Position, obj.Rotation);
             var hp = new ActorHP();
+            uint curMP = 0;
             if (character != null)
             {
                 hp.Cur = character.CurrentHp;
                 hp.Max = character.MaxHp;
                 hp.Shield = (uint)(Utils.CharacterShieldValue(character) * 0.01f * hp.Max);
+                curMP = character.CurrentMp;
             }
             var targetable = Utils.GameObjectIsTargetable(obj);
             var friendly = Utils.GameObjectIsFriendly(obj);
             var isDead = Utils.GameObjectIsDead(obj);
             var inCombat = character?.StatusFlags.HasFlag(StatusFlags.InCombat) ?? false;
-            var target = SanitizedObjectID(obj != Service.ClientState.LocalPlayer ? obj.TargetObjectId : (Service.TargetManager.Target?.ObjectId ?? 0)); // this is a bit of a hack - when changing targets, we want AI to see changes immediately rather than wait for server response
+            var target = character == null ? 0 : SanitizedObjectID(obj != Service.ClientState.LocalPlayer ? Utils.CharacterTargetID(character) : (Service.TargetManager.Target?.ObjectId ?? 0)); // this is a bit of a hack - when changing targets, we want AI to see changes immediately rather than wait for server response
             var modelState = character != null ? Utils.CharacterModelState(character) : (byte)0; // TODO: consider this (reading memory) vs network (actor control 63)
             var eventState = Utils.GameObjectEventState(obj);
+            var radius = Utils.GameObjectRadius(obj);
 
-            var act = Actors.Find(obj.ObjectId);
             if (act == null)
             {
                 Execute(new ActorState.OpCreate() {
                     InstanceID = obj.ObjectId,
                     OID = obj.DataId,
+                    SpawnIndex = index,
                     Name = name,
                     Type = (ActorType)(((int)obj.ObjectKind << 8) + obj.SubKind),
                     Class = classID,
                     PosRot = posRot,
-                    HitboxRadius = obj.HitboxRadius,
+                    HitboxRadius = radius,
                     HP = hp,
+                    CurMP = curMP,
                     IsTargetable = targetable,
                     IsAlly = friendly,
                     OwnerID = SanitizedObjectID(obj.OwnerId)
                 });
-                act = Actors.Find(obj.ObjectId)!;
+                act = _actorsByIndex[index] = Actors.Find(obj.ObjectId)!;
             }
             else
             {
@@ -144,10 +173,10 @@ namespace BossMod
                     Execute(new ActorState.OpClassChange() { InstanceID = act.InstanceID, Class = classID });
                 if (act.PosRot != posRot)
                     Execute(new ActorState.OpMove() { InstanceID = act.InstanceID, PosRot = posRot });
-                if (act.HitboxRadius != obj.HitboxRadius)
-                    Execute(new ActorState.OpSizeChange() { InstanceID = act.InstanceID, HitboxRadius = obj.HitboxRadius });
-                if (act.HP.Cur != hp.Cur || act.HP.Max != hp.Max || act.HP.Shield != hp.Shield)
-                    Execute(new ActorState.OpHP() { InstanceID = act.InstanceID, Value = hp });
+                if (act.HitboxRadius != radius)
+                    Execute(new ActorState.OpSizeChange() { InstanceID = act.InstanceID, HitboxRadius = radius });
+                if (act.HP.Cur != hp.Cur || act.HP.Max != hp.Max || act.HP.Shield != hp.Shield || act.CurMP != curMP)
+                    Execute(new ActorState.OpHPMP() { InstanceID = act.InstanceID, HP = hp, CurMP = curMP });
                 if (act.IsTargetable != targetable)
                     Execute(new ActorState.OpTargetable() { InstanceID = act.InstanceID, Value = targetable });
                 if (act.IsAlly != friendly)
@@ -192,8 +221,8 @@ namespace BossMod
                     {
                         var dur = Math.Min(Math.Abs(s.RemainingTime), 100000);
                         curStatus.ID = s.StatusId;
-                        curStatus.SourceID = SanitizedObjectID(s.SourceID);
-                        curStatus.Extra = StatusExtra(s);
+                        curStatus.SourceID = SanitizedObjectID(s.SourceId);
+                        curStatus.Extra = s.Param;
                         curStatus.ExpireAt = CurrentTime.AddSeconds(dur);
                     }
                     UpdateActorStatus(act, i, curStatus);
@@ -285,8 +314,7 @@ namespace BossMod
                 Execute(new PartyState.OpModify() { Slot = slot, ContentID = contentID, InstanceID = instanceID });
         }
 
-        private ushort StatusExtra(Dalamud.Game.ClientState.Statuses.Status s) => (ushort)((s.Param << 8) | s.StackCount);
-        private ulong SanitizedObjectID(uint raw) => raw != GameObject.InvalidGameObjectId ? raw : 0;
+        private ulong SanitizedObjectID(ulong raw) => raw != GameObject.InvalidGameObjectId ? raw : 0;
 
         private void DispatchActorEvents(ulong instanceID)
         {
@@ -314,6 +342,7 @@ namespace BossMod
 
         private void OnNetworkEffectResult(object? sender, (ulong actorID, uint seq, int targetIndex) args)
         {
+            _actorOps.GetOrAdd(args.actorID).Add(new ActorState.OpEffectResult() { InstanceID = args.actorID, Seq = args.seq, TargetIndex = args.targetIndex });
             _confirms.Add((args.seq, args.actorID, args.targetIndex));
         }
 
@@ -332,6 +361,21 @@ namespace BossMod
             _actorOps.GetOrAdd(actorID).Add(new ActorState.OpTether() { InstanceID = actorID, Value = new() });
         }
 
+        private void OnNetworkActorControlEObjSetState(object? sender, (ulong actorID, ushort state) args)
+        {
+            _actorOps.GetOrAdd(args.actorID).Add(new ActorState.OpEventObjectStateChange() { InstanceID = args.actorID, State = args.state });
+        }
+
+        private void OnNetworkActorControlEObjAnimation(object? sender, (ulong actorID, ushort p1, ushort p2) args)
+        {
+            _actorOps.GetOrAdd(args.actorID).Add(new ActorState.OpEventObjectAnimation() { InstanceID = args.actorID, Param1 = args.p1, Param2 = args.p2 });
+        }
+
+        private void OnNetworkActorControlPlayActionTimeline(object? sender, (ulong actorID, ushort actionTimelineID) args)
+        {
+            _actorOps.GetOrAdd(args.actorID).Add(new ActorState.OpPlayActionTimelineEvent() { InstanceID = args.actorID, ActionTimelineID = args.actionTimelineID });
+        }
+
         private void OnNetworkActorControlSelfDirectorUpdate(object? sender, (uint directorID, uint updateID, uint p1, uint p2, uint p3, uint p4) args)
         {
             _globalOps.Add(new OpDirectorUpdate() { DirectorID = args.directorID, UpdateID = args.updateID, Param1 = args.p1, Param2 = args.p2, Param3 = args.p3, Param4 = args.p4 });
@@ -345,6 +389,11 @@ namespace BossMod
         private void OnNetworkWaymark(object? sender, (Waymark waymark, Vector3? pos) args)
         {
             _globalOps.Add(new WaymarkState.OpWaymarkChange() { ID = args.waymark, Pos = args.pos });
+        }
+
+        private void OnNetworkRSVData(object? sender, (string key, string value) args)
+        {
+            _globalOps.Add(new OpRSVData() { Key = args.key, Value = args.value });
         }
     }
 }
