@@ -84,11 +84,9 @@ namespace BossMod
             UpdateRecastTimes = 0x00E5, // payload = 80 floats 'elapsed' + 80 floats 'total'
 
             // S: 41 89 0C 02 48 8D 40 08
-            // C: 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
             UpdateHate = 0x0366, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // S: E8 ? ? ? ? 4C 8B C0 BA ? ? ? ? 48 63 C6
-            // C: 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ?
             UpdateHater = 0x0320, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
             // Don't know is it the right opcode
