@@ -79,18 +79,6 @@ namespace BossMod
             }
         }
 
-        public void UpdatePotentialTargets(Action<Enemy> fn)
-        {
-            foreach (var enemy in PotentialTargets)
-                fn(enemy);
-        }
-
-        public void AssignPotentialTargetPriorities(Func<Actor, int> map)
-        {
-            foreach (var enemy in PotentialTargets)
-                enemy.Priority = map(enemy.Actor);
-        }
-
         public void AddForbiddenZone(Func<WPos, float> shapeDistance, DateTime activation = new()) => ForbiddenZones.Add((shapeDistance, activation));
         public void AddForbiddenZone(AOEShape shape, WPos origin, Angle rot = new(), DateTime activation = new()) => ForbiddenZones.Add((shape.Distance(origin, rot), activation));
 
