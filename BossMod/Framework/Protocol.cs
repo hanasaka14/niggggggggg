@@ -83,18 +83,13 @@ namespace BossMod
             // 48 89 5C 24 08 57 48 83 EC ? 48 8B DA 33 FF 90
             UpdateRecastTimes = 0x00E5, // payload = 80 floats 'elapsed' + 80 floats 'total'
 
-            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
+            // S: 41 89 0C 02 48 8D 40 08
+            // C: 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 41 08
             UpdateHate = 0x0366, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
 
-            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ?
+            // S: E8 ? ? ? ? 4C 8B C0 BA ? ? ? ? 48 63 C6
+            // C: 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 83 39 ?
             UpdateHater = 0x0320, // payload = byte length + 3 bytes padding + { uint objID, byte enmity, byte padding[3] }[len]
-
-            // E8 ? ? ? ? 84 C0 74 ? B0 ? EB ? 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? 5B C3 CC CC CC CC CC CC 40 53
-            Countdown = 0x0360,
-
-            // First match
-            // 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 84 24 70 0F 00 00 48 8B 0D ? ? ? ? E8 ? ? ? ? 48 85 C0 74 ? 45 33 C9 C7 44 24 20 ? ? ? ? 45 33 C0 48 C7 44 24 28 ? ? ? ? 48 8D 54 24 20 C6 44 24 40 ? 48 8B C8 E8 ? ? ? ? 84 C0 74 ? B0 ? 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 32 C0 48 8B 8C 24 70 0F 00 00 48 33 CC E8 ? ? ? ? 48 81 C4 ? ? ? ? C3 CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC CC 48 81 EC ? ? ? ?
-            CountdownCancel = 0x00E7,
 
             // 48 8D 54 24 20 45 33 C9 C7 44 24 20
             ActionRequest = 0x0069, // just begin casting return...
